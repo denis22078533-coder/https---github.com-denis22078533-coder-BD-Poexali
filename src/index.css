@@ -1,0 +1,173 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 28% 7%;
+    --foreground: 210 20% 92%;
+
+    --card: 222 25% 10%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 222 25% 10%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 43 74% 56%;
+    --primary-foreground: 222 28% 7%;
+
+    --secondary: 222 22% 16%;
+    --secondary-foreground: 210 20% 85%;
+
+    --muted: 222 22% 14%;
+    --muted-foreground: 215 15% 55%;
+
+    --accent: 43 74% 56%;
+    --accent-foreground: 222 28% 7%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 20% 18%;
+    --input: 222 22% 16%;
+    --ring: 43 74% 56%;
+
+    --radius: 0.375rem;
+
+    --sidebar-background: 222 30% 6%;
+    --sidebar-foreground: 210 15% 75%;
+    --sidebar-primary: 43 74% 56%;
+    --sidebar-primary-foreground: 222 28% 7%;
+    --sidebar-accent: 222 22% 13%;
+    --sidebar-accent-foreground: 210 20% 85%;
+    --sidebar-border: 222 20% 15%;
+    --sidebar-ring: 43 74% 56%;
+
+    --gold: 43 74% 56%;
+    --gold-dim: 43 60% 40%;
+    --surface: 222 25% 10%;
+    --surface-raised: 222 22% 13%;
+    --positive: 142 76% 36%;
+    --negative: 0 72% 51%;
+    --brand-blue: 199 91% 39%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", "IBM Plex Sans", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--gold-dim));
+  }
+}
+
+@layer utilities {
+  .font-mono-fin {
+    font-family: "IBM Plex Mono", monospace;
+  }
+
+  .gold-line {
+    border-left: 2px solid hsl(var(--gold));
+  }
+
+  .card-fin {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+  }
+
+  .card-fin-raised {
+    background: hsl(var(--surface-raised));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+  }
+
+  .text-positive {
+    color: hsl(var(--positive));
+  }
+
+  .text-negative {
+    color: hsl(var(--negative));
+  }
+
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+
+  .bg-gold {
+    background: hsl(var(--gold));
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.35s ease forwards;
+  }
+
+  .hover-row:hover {
+    background: hsl(var(--surface-raised));
+    transition: background 0.15s ease;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.grid-chart-line {
+  stroke: hsl(var(--border));
+  stroke-dasharray: none;
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-family: "IBM Plex Mono", monospace !important;
+  font-size: 11px !important;
+  fill: hsl(var(--muted-foreground)) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 4px !important;
+  font-family: "IBM Plex Sans", sans-serif !important;
+}
