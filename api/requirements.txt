@@ -1,0 +1,21 @@
+# Основные зависимости сервера
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# База данных
+psycopg2-binary>=2.9.0
+
+# S3 / Object Storage
+boto3>=1.26.0
+
+# HTTP-запросы
+requests>=2.31.0
+
+# PDF-отчёты (reportlab + Pillow для изображений)
+reportlab>=4.0.0
+Pillow>=10.0.0
+
+# Excel (чтение .xlsx и .xls)
+openpyxl>=3.1.0
+xlrd>=2.0.1
