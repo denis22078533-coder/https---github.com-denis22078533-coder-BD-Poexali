@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import { api } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -85,12 +86,16 @@ function TileDialog({
   onChange,
   open,
   onOpenChange,
+  onSave,
+  saving,
 }: {
   tile: TileDef;
   data: Record<string, string>;
   onChange: (key: string, val: string) => void;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onSave?: () => void;
+  saving?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,7 +125,21 @@ function TileDialog({
           ))}
         </div>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end gap-2 pt-2">
+          {onSave && (
+            <button
+              onClick={onSave}
+              disabled={saving}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {saving ? (
+                <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              ) : (
+                <Icon name="Save" size={14} />
+              )}
+              Сохранить
+            </button>
+          )}
           <button
             onClick={() => onOpenChange(false)}
             className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm rounded-lg transition-colors"
@@ -156,10 +175,61 @@ export default function BrainSettings() {
   };
 
   const [activeTile, setActiveTile] = useState<string | null>(null);
+  const [savingSecrets, setSavingSecrets] = useState(false);
+  const [savingStorage, setSavingStorage] = useState(false);
 
   const handleChange = (key: string, val: string) => {
     if (!activeTile) return;
     setters[activeTile]?.((prev) => ({ ...prev, [key]: val }));
+  };
+
+  /* ── сохранение Секретов → api.aiSettings.update ────────── */
+  const handleSaveSecrets = async () => {
+    setSavingSecrets(true);
+    try {
+      const payload: Record<string, string> = {};
+      if (secData.proxyapiKey?.trim()) payload.proxyapi_key = secData.proxyapiKey.trim();
+      if (secData.deepseekKey?.trim()) payload.api_key = secData.deepseekKey.trim();
+      else if (secData.openaiKey?.trim()) payload.api_key = secData.openaiKey.trim();
+
+      if (Object.keys(payload).length === 0) {
+        alert("Нет данных для сохранения. Заполните хотя бы одно поле.");
+        return;
+      }
+
+      await api.aiSettings.update(payload);
+      alert("Настройки сохранены в БД!");
+    } catch (e) {
+      console.error("Ошибка сохранения секретов:", e);
+      alert("Ошибка: " + (e instanceof Error ? e.message : "Неизвестная ошибка"));
+    } finally {
+      setSavingSecrets(false);
+    }
+  };
+
+  /* ── сохранение Хранилища → api.s3Settings.update ──────── */
+  const handleSaveStorage = async () => {
+    setSavingStorage(true);
+    try {
+      const payload: Record<string, string> = {};
+      if (stData.bucketName?.trim()) payload.bucket_name = stData.bucketName.trim();
+      if (stData.endpointUrl?.trim()) payload.endpoint_url = stData.endpointUrl.trim();
+      if (stData.accessKey?.trim()) payload.access_key = stData.accessKey.trim();
+      if (stData.secretKey?.trim()) payload.secret_key = stData.secretKey.trim();
+
+      if (Object.keys(payload).length === 0) {
+        alert("Нет данных для сохранения. Заполните хотя бы одно поле.");
+        return;
+      }
+
+      await api.s3Settings.update(payload);
+      alert("Настройки сохранены в БД!");
+    } catch (e) {
+      console.error("Ошибка сохранения хранилища:", e);
+      alert("Ошибка: " + (e instanceof Error ? e.message : "Неизвестная ошибка"));
+    } finally {
+      setSavingStorage(false);
+    }
   };
 
   return (
@@ -243,6 +313,20 @@ export default function BrainSettings() {
           onOpenChange={(v) => {
             if (!v) setActiveTile(null);
           }}
+          onSave={
+            tile.id === "secrets"
+              ? handleSaveSecrets
+              : tile.id === "storage"
+              ? handleSaveStorage
+              : undefined
+          }
+          saving={
+            tile.id === "secrets"
+              ? savingSecrets
+              : tile.id === "storage"
+              ? savingStorage
+              : undefined
+          }
         />
       ))}
     </div>
