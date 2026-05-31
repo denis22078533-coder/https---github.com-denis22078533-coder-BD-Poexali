@@ -1,15 +1,15 @@
 const URLS = {
-  imgProxy: "https://functions.poehali.dev/175171fe-6d38-4594-af4a-511eff3025ef",
-  transactions: "https://functions.poehali.dev/3105b014-e11e-42e7-b435-176f087cf6e1",
-  documents: "https://functions.poehali.dev/ab114954-abef-4fbd-aa0f-6200ccdf9984",
-  taxReports: "https://functions.poehali.dev/d6031486-b133-49f5-ab9c-8dae0492a797",
-  aiSettings: "https://functions.poehali.dev/2d22aebf-09ca-46d6-98b1-a36a7556d511",
-  aiChat: "https://functions.poehali.dev/1700fcd4-35b3-4a49-8472-292f760d2f96",
-  recognizeDoc: "https://functions.poehali.dev/912d2561-eabf-42bf-9a5f-29747a113c4e",
-  s3Settings: "https://functions.poehali.dev/994a3fe5-ea96-4bca-bad7-09a990b48212",
-  uploadDoc: "https://functions.poehali.dev/cc362dea-3988-4a28-a94e-166b527ac26c",
-  generatePdf: "https://functions.poehali.dev/fff58902-afa3-4eb6-8403-6975c2c5ce0b",
-  docsPdf: "https://functions.poehali.dev/cd1cab49-82a0-450c-9939-2afd35536b4b",
+  imgProxy: "/api/img-proxy",
+  transactions: "/api/transactions",
+  documents: "/api/documents",
+  taxReports: "/api/tax-reports",
+  aiSettings: "/api/ai-settings",
+  aiChat: "/api/ai-chat",
+  recognizeDoc: "/api/recognize-doc",
+  s3Settings: "/api/s3-settings",
+  uploadDoc: "/api/upload-doc",
+  generatePdf: "/api/generate-pdf",
+  docsPdf: "/api/docs-pdf",
 };
 
 /** Оборачивает URL из Яндекс S3 в прокси для обхода CORS */
@@ -211,13 +211,13 @@ export const api = {
 
   // ─── Fix S3 ACL (public-read for all docs) ──────────────
   fixS3Acl: (): Promise<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }> =>
-    request<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }>("https://functions.poehali.dev/9103f50f-35bf-436a-805f-a852b1f78e57", { method: "POST" }),
+    request<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }>("/api/fix-s3-acl", { method: "POST" }),
 
   // ─── Categories (статьи затрат) ─────────────────────────
   categories: {
-    list: () => request<{ categories: { name: string; is_default: boolean }[] }>("https://functions.poehali.dev/c2ced8af-0c23-4b87-8705-185ef89e243e"),
-    add: (name: string) => request<{ ok: boolean; name: string }>("https://functions.poehali.dev/c2ced8af-0c23-4b87-8705-185ef89e243e", { method: "POST", body: JSON.stringify({ name }) }),
-    remove: (name: string) => request<{ ok: boolean }>(`https://functions.poehali.dev/c2ced8af-0c23-4b87-8705-185ef89e243e?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
+    list: () => request<{ categories: { name: string; is_default: boolean }[] }>("/api/categories"),
+    add: (name: string) => request<{ ok: boolean; name: string }>("/api/categories", { method: "POST", body: JSON.stringify({ name }) }),
+    remove: (name: string) => request<{ ok: boolean }>(`/api/categories?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
   },
 
   // ─── Upload document to S3 ──────────────────────────────
