@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import BrainSettings from "@/components/BrainSettings";
 import { api, type AiSettings, type S3Settings } from "@/lib/api";
 
 const models = [
@@ -215,6 +217,28 @@ export default function AdminSettings() {
 
   return (
     <div className="animate-fade-in w-full max-w-3xl space-y-3 sm:space-y-4">
+
+      {/* ── Вкладки ──────────────────────────────── */}
+      <Tabs defaultValue="ai" className="w-full">
+        <TabsList className="w-full justify-start bg-zinc-900 border border-zinc-800 rounded-lg p-1 mb-2 overflow-x-auto">
+          <TabsTrigger
+            value="ai"
+            className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-400 text-xs sm:text-sm gap-1.5"
+          >
+            <Icon name="Bot" size={15} />
+            <span className="hidden sm:inline">ИИ-ассистент</span>
+            <span className="sm:hidden">ИИ</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="brain"
+            className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-400 text-xs sm:text-sm gap-1.5"
+          >
+            <Icon name="Cpu" size={15} />
+            Мозг
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="ai" className="mt-0 space-y-3 sm:space-y-4">
 
       {/* ── Сводка активных ИИ ──────────────────────────────── */}
       <div className="card-fin p-3 sm:p-4 border border-gold/20">
@@ -830,6 +854,13 @@ export default function AdminSettings() {
           </div>
         )}
       </div>
+
+        </TabsContent>
+
+        <TabsContent value="brain" className="mt-0">
+          <BrainSettings />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
