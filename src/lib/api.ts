@@ -213,35 +213,35 @@ export const api = {
   fixS3Acl: (): Promise<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }> =>
     request<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }>("http://89.108.88.207:8000/api/fix-s3-acl", { method: "POST" }),
 
-  // ─── Database Settings ─────────────────────────
-  dbSettings: {
-    get: () =>
-      request<DbSettingsStatus>("/api/db-settings"),
+    // ─── Database Settings ─────────────────────────
+    dbSettings: {
+      get: () =>
+        request<DbSettingsStatus>("http://89.108.88.207:8000/api/db-settings"),
 
-    install: () =>
-      request<{ ok: boolean; steps?: string[]; error?: string; database_url_masked?: string }>(
-        "/api/db-settings",
-        { method: "POST", body: JSON.stringify({ action: "install" }) }
-      ),
+      install: () =>
+        request<{ ok: boolean; steps?: string[]; error?: string; database_url_masked?: string }>(
+          "http://89.108.88.207:8000/api/db-settings",
+          { method: "POST", body: JSON.stringify({ action: "install" }) }
+        ),
 
-    configure: (database_url: string) =>
-      request<{ ok: boolean; message?: string; error?: string }>(
-        "/api/db-settings",
-        { method: "POST", body: JSON.stringify({ action: "configure", database_url }) }
-      ),
+      configure: (database_url: string) =>
+        request<{ ok: boolean; message?: string; error?: string }>(
+          "http://89.108.88.207:8000/api/db-settings",
+          { method: "POST", body: JSON.stringify({ action: "configure", database_url }) }
+        ),
 
-    migrate: () =>
-      request<{ ok: boolean; applied?: number; total?: number; errors?: string[]; error?: string }>(
-        "/api/db-settings",
-        { method: "POST", body: JSON.stringify({ action: "migrate" }) }
-      ),
+      migrate: () =>
+        request<{ ok: boolean; applied?: number; total?: number; errors?: string[]; error?: string }>(
+          "http://89.108.88.207:8000/api/db-settings",
+          { method: "POST", body: JSON.stringify({ action: "migrate" }) }
+        ),
 
-    test: () =>
-      request<{ ok: boolean; message?: string; error?: string }>(
-        "/api/db-settings",
-        { method: "POST", body: JSON.stringify({ action: "test" }) }
-      ),
-  },
+      test: () =>
+        request<{ ok: boolean; message?: string; error?: string }>(
+          "http://89.108.88.207:8000/api/db-settings",
+          { method: "POST", body: JSON.stringify({ action: "test" }) }
+        ),
+    },
 
   // ─── Categories (статьи затрат) ─────────────────────────
   categories: {

@@ -74,6 +74,8 @@ export default function AdminSettings() {
     error?: string;
     ai_model?: string;
     ai?: { ok: boolean; error?: string };
+    vision_provider?: string;
+    vision?: { ok: boolean | null; error?: string };
     yandex?: { ok: boolean | null; error?: string };
   } | null>(null);
 
@@ -863,6 +865,8 @@ export default function AdminSettings() {
           </div>
         )}
       </div>
+      </div>
+      </div>
 
         </TabsContent>
 
@@ -873,6 +877,10 @@ export default function AdminSettings() {
         <TabsContent value="database" className="mt-0 space-y-3 sm:space-y-4">
           <DatabaseSettings
             dbStatus={dbStatus}
+            dbInstalling={dbInstalling}
+            setDbInstalling={setDbInstalling}
+            dbInstallResult={dbInstallResult}
+            setDbInstallResult={setDbInstallResult}
             dbMigrating={dbMigrating}
             setDbMigrating={setDbMigrating}
             dbMigrateResult={dbMigrateResult}
@@ -897,6 +905,10 @@ export default function AdminSettings() {
 
 interface DatabaseSettingsProps {
   dbStatus: DbSettingsStatus | null;
+  dbInstalling: boolean;
+  setDbInstalling: (v: boolean) => void;
+  dbInstallResult: { ok?: boolean; steps?: string[]; error?: string; database_url_masked?: string } | null;
+  setDbInstallResult: (v: any) => void;
   dbMigrating: boolean;
   setDbMigrating: (v: boolean) => void;
   dbMigrateResult: { ok?: boolean; applied?: number; total?: number; errors?: string[]; error?: string } | null;
@@ -912,6 +924,8 @@ interface DatabaseSettingsProps {
 
 function DatabaseSettings({
   dbStatus,
+  dbInstalling, setDbInstalling,
+  dbInstallResult, setDbInstallResult,
   dbMigrating, setDbMigrating,
   dbMigrateResult, setDbMigrateResult,
   dbManualUrl, setDbManualUrl,
@@ -974,6 +988,24 @@ function DatabaseSettings({
     onRefresh();
   };
 
+  const handleInstall = async () => {
+    setDbInstalling(true);
+    setDbInstallResult(null);
+    try {
+      const res = await api.dbSettings.install();
+      setDbInstallResult(res);
+      if (res.ok) onRefresh();
+    } catch (e) {
+      setDbInstallResult({ ok: false, error: e instanceof Error ? e.message : "Ошибка" });
+    } finally {
+      setDbInstalling(false);
+    }
+  };
+
+  const installed = dbStatus?.installed ?? false;
+  const running = dbStatus?.running ?? false;
+  const configured = dbStatus?.configured ?? false;
+  const schemaExists = dbStatus?.schema_exists ?? false;
   const connected = dbStatus?.connected ?? false;
   const tablesExist = (dbStatus?.tables_count ?? 0) > 0;
   const migrationsApplied = dbStatus?.migrations_applied ?? 0;
