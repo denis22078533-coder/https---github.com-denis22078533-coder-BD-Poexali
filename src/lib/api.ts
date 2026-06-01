@@ -213,6 +213,36 @@ export const api = {
   fixS3Acl: (): Promise<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }> =>
     request<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }>("http://89.108.88.207:8000/api/fix-s3-acl", { method: "POST" }),
 
+  // ─── Database Settings ─────────────────────────
+  dbSettings: {
+    get: () =>
+      request<DbSettingsStatus>("http://89.108.88.207:8000/api/db-settings"),
+
+    install: () =>
+      request<{ ok: boolean; steps?: string[]; error?: string; database_url_masked?: string }>(
+        "http://89.108.88.207:8000/api/db-settings",
+        { method: "POST", body: JSON.stringify({ action: "install" }) }
+      ),
+
+    configure: (database_url: string) =>
+      request<{ ok: boolean; message?: string; error?: string }>(
+        "http://89.108.88.207:8000/api/db-settings",
+        { method: "POST", body: JSON.stringify({ action: "configure", database_url }) }
+      ),
+
+    migrate: () =>
+      request<{ ok: boolean; applied?: number; total?: number; errors?: string[]; error?: string }>(
+        "http://89.108.88.207:8000/api/db-settings",
+        { method: "POST", body: JSON.stringify({ action: "migrate" }) }
+      ),
+
+    test: () =>
+      request<{ ok: boolean; message?: string; error?: string }>(
+        "http://89.108.88.207:8000/api/db-settings",
+        { method: "POST", body: JSON.stringify({ action: "test" }) }
+      ),
+  },
+
   // ─── Categories (статьи затрат) ─────────────────────────
   categories: {
     list: () => request<{ categories: { name: string; is_default: boolean }[] }>("http://89.108.88.207:8000/api/categories"),
@@ -309,6 +339,21 @@ export interface RecognizeResult {
   warning?: string;
   existing_name?: string;
   existing_id?: number;
+}
+
+export interface DbSettingsStatus {
+  installed: boolean;
+  running: boolean;
+  configured: boolean;
+  connected?: boolean;
+  version?: string;
+  schema_exists?: boolean;
+  tables_count?: number;
+  tables?: string[];
+  migrations_applied?: number;
+  migration_files?: string[];
+  migrations_total?: number;
+  connection_error?: string;
 }
 
 export const fmt = (n: number) =>

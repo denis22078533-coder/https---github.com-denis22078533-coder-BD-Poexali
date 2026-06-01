@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BrainSettings from "@/components/BrainSettings";
-import { api, type AiSettings, type S3Settings } from "@/lib/api";
+import { api, type AiSettings, type S3Settings, type DbSettingsStatus } from "@/lib/api";
 
 const models = [
   { id: "proxyapi-gpt-4o", name: "GPT-4o (ProxyAPI)", provider: "ProxyAPI", desc: "Лучшая модель OpenAI для русских документов", recommended: true },
@@ -89,13 +89,25 @@ export default function AdminSettings() {
   const [fixingAcl, setFixingAcl] = useState(false);
   const [fixAclResult, setFixAclResult] = useState<{ ok: boolean; fixed: number; errors_count: number } | null>(null);
 
+  // DB state
+  const [dbStatus, setDbStatus] = useState<DbSettingsStatus | null>(null);
+  const [dbInstalling, setDbInstalling] = useState(false);
+  const [dbInstallResult, setDbInstallResult] = useState<{ ok?: boolean; steps?: string[]; error?: string; database_url_masked?: string } | null>(null);
+  const [dbMigrating, setDbMigrating] = useState(false);
+  const [dbMigrateResult, setDbMigrateResult] = useState<{ ok?: boolean; applied?: number; total?: number; errors?: string[]; error?: string } | null>(null);
+  const [dbManualUrl, setDbManualUrl] = useState("");
+  const [dbSavingUrl, setDbSavingUrl] = useState(false);
+  const [dbUrlSaved, setDbUrlSaved] = useState(false);
+
   useEffect(() => {
     Promise.all([
       api.aiSettings.get(),
       api.s3Settings.get(),
-    ]).then(([aiRes, s3Res]) => {
+      api.dbSettings.get(),
+    ]).then(([aiRes, s3Res, dbRes]) => {
       setSettings(aiRes.settings);
       setS3(s3Res.settings);
+      setDbStatus(dbRes);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -235,6 +247,14 @@ export default function AdminSettings() {
           >
             <Icon name="Cpu" size={15} />
             Мозг
+          </TabsTrigger>
+          <TabsTrigger
+            value="database"
+            className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-400 text-xs sm:text-sm gap-1.5"
+          >
+            <Icon name="Database" size={15} />
+            <span className="hidden sm:inline">База данных</span>
+            <span className="sm:hidden">БД</span>
           </TabsTrigger>
         </TabsList>
 
@@ -860,7 +880,447 @@ export default function AdminSettings() {
         <TabsContent value="brain" className="mt-0">
           <BrainSettings />
         </TabsContent>
+
+        <TabsContent value="database" className="mt-0 space-y-3 sm:space-y-4">
+          <DatabaseSettings
+            dbStatus={dbStatus}
+            dbInstalling={dbInstalling}
+            setDbInstalling={setDbInstalling}
+            dbInstallResult={dbInstallResult}
+            setDbInstallResult={setDbInstallResult}
+            dbMigrating={dbMigrating}
+            setDbMigrating={setDbMigrating}
+            dbMigrateResult={dbMigrateResult}
+            setDbMigrateResult={setDbMigrateResult}
+            dbManualUrl={dbManualUrl}
+            setDbManualUrl={setDbManualUrl}
+            dbSavingUrl={dbSavingUrl}
+            setDbSavingUrl={setDbSavingUrl}
+            dbUrlSaved={dbUrlSaved}
+            setDbUrlSaved={setDbUrlSaved}
+            onRefresh={() => {
+              api.dbSettings.get().then(setDbStatus);
+            }}
+          />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// ─── Компонент Базы данных ──────────────────────────────────
+
+interface DatabaseSettingsProps {
+  dbStatus: DbSettingsStatus | null;
+  dbInstalling: boolean;
+  setDbInstalling: (v: boolean) => void;
+  dbInstallResult: { ok?: boolean; steps?: string[]; error?: string; database_url_masked?: string } | null;
+  setDbInstallResult: (v: any) => void;
+  dbMigrating: boolean;
+  setDbMigrating: (v: boolean) => void;
+  dbMigrateResult: { ok?: boolean; applied?: number; total?: number; errors?: string[]; error?: string } | null;
+  setDbMigrateResult: (v: any) => void;
+  dbManualUrl: string;
+  setDbManualUrl: (v: string) => void;
+  dbSavingUrl: boolean;
+  setDbSavingUrl: (v: boolean) => void;
+  dbUrlSaved: boolean;
+  setDbUrlSaved: (v: boolean) => void;
+  onRefresh: () => void;
+}
+
+function DatabaseSettings({
+  dbStatus,
+  dbInstalling, setDbInstalling,
+  dbInstallResult, setDbInstallResult,
+  dbMigrating, setDbMigrating,
+  dbMigrateResult, setDbMigrateResult,
+  dbManualUrl, setDbManualUrl,
+  dbSavingUrl, setDbSavingUrl,
+  dbUrlSaved, setDbUrlSaved,
+  onRefresh,
+}: DatabaseSettingsProps) {
+  // Статус-бейдж
+  const StatusBadge = ({ ok, label }: { ok: boolean | null | undefined; label: string }) => (
+    <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${
+      ok === true
+        ? "bg-green-900/30 text-green-400 border border-green-800/50"
+        : ok === false
+        ? "bg-red-900/30 text-red-400 border border-red-800/50"
+        : "bg-zinc-800 text-zinc-500 border border-zinc-700/50"
+    }`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${
+        ok === true ? "bg-green-400"
+        : ok === false ? "bg-red-400"
+        : "bg-zinc-500"
+      }`} />
+      {label}
+    </span>
+  );
+
+  const handleInstall = async () => {
+    if (!confirm("Установить PostgreSQL на сервер? Это может занять 1-2 минуты.")) return;
+    setDbInstalling(true);
+    setDbInstallResult(null);
+    try {
+      const res = await api.dbSettings.install();
+      setDbInstallResult(res);
+      if (res.ok) onRefresh();
+    } catch (e) {
+      setDbInstallResult({ ok: false, error: e instanceof Error ? e.message : "Ошибка" });
+    } finally {
+      setDbInstalling(false);
+    }
+  };
+
+  const handleMigrate = async () => {
+    setDbMigrating(true);
+    setDbMigrateResult(null);
+    try {
+      const res = await api.dbSettings.migrate();
+      setDbMigrateResult(res);
+      if (res.ok) onRefresh();
+    } catch (e) {
+      setDbMigrateResult({ ok: false, error: e instanceof Error ? e.message : "Ошибка" });
+    } finally {
+      setDbMigrating(false);
+    }
+  };
+
+  const handleSaveUrl = async () => {
+    if (!dbManualUrl.trim()) return;
+    setDbSavingUrl(true);
+    setDbUrlSaved(false);
+    try {
+      const res = await api.dbSettings.configure(dbManualUrl.trim());
+      if (res.ok) {
+        setDbUrlSaved(true);
+        setDbManualUrl("");
+        onRefresh();
+        setTimeout(() => setDbUrlSaved(false), 3000);
+      }
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Ошибка");
+    } finally {
+      setDbSavingUrl(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    onRefresh();
+  };
+
+  const installed = dbStatus?.installed ?? false;
+  const running = dbStatus?.running ?? false;
+  const configured = dbStatus?.configured ?? false;
+  const connected = dbStatus?.connected ?? false;
+
+  if (!dbStatus) {
+    return (
+      <div className="card-fin p-5">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="w-5 h-5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
+          Проверка статуса…
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* ── Статус ──────────────────────────────── */}
+      <div className="card-fin p-4 sm:p-5">
+        <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-4 gold-line pl-3">Статус базы данных</div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div className="bg-secondary/50 rounded-lg p-3 text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">PostgreSQL</div>
+            <StatusBadge ok={installed} label={installed ? "Установлен" : "Не установлен"} />
+          </div>
+          <div className="bg-secondary/50 rounded-lg p-3 text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Сервис</div>
+            <StatusBadge ok={running} label={running ? "Запущен" : "Остановлен"} />
+          </div>
+          <div className="bg-secondary/50 rounded-lg p-3 text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">DATABASE_URL</div>
+            <StatusBadge ok={configured} label={configured ? "Задан" : "Не задан"} />
+          </div>
+          <div className="bg-secondary/50 rounded-lg p-3 text-center">
+            <div className="text-[10px] text-muted-foreground uppercase mb-1">Подключение</div>
+            <StatusBadge ok={connected} label={connected ? "Работает" : "Нет связи"} />
+          </div>
+        </div>
+
+        {/* Версия и таблицы */}
+        {dbStatus.version && (
+          <div className="text-xs text-muted-foreground mb-2">
+            <span className="text-foreground font-medium">Версия:</span> {dbStatus.version}
+          </div>
+        )}
+        {dbStatus.schema_exists && (
+          <div className="text-xs text-muted-foreground mb-2">
+            <span className="text-foreground font-medium">Таблиц в схеме:</span> {dbStatus.tables_count ?? 0}
+            {dbStatus.tables && dbStatus.tables.length > 0 && (
+              <span className="ml-2 text-muted-foreground/70">
+                ({dbStatus.tables.join(", ")})
+              </span>
+            )}
+          </div>
+        )}
+        {dbStatus.migrations_applied !== undefined && (
+          <div className="text-xs text-muted-foreground">
+            <span className="text-foreground font-medium">Миграций применено:</span> {dbStatus.migrations_applied} / {dbStatus.migrations_total ?? dbStatus.migration_files?.length ?? "?"}
+          </div>
+        )}
+        {dbStatus.connection_error && (
+          <div className="mt-2 p-2 rounded bg-red-900/20 border border-red-900/30 text-xs text-red-400">
+            {dbStatus.connection_error}
+          </div>
+        )}
+
+        <button onClick={handleRefresh}
+          className="mt-3 px-3 py-1.5 border border-border rounded text-xs text-muted-foreground hover:text-foreground hover:border-gold/40 transition-colors flex items-center gap-1.5">
+          <Icon name="RefreshCw" size={13} />
+          Обновить статус
+        </button>
+      </div>
+
+      {/* ── Установка PostgreSQL ───────────── */}
+      {!installed && (
+        <div className="card-fin p-4 sm:p-5 border border-gold/20">
+          <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 gold-line pl-3">Установка PostgreSQL</div>
+          <p className="text-sm text-muted-foreground mb-4">
+            PostgreSQL не обнаружен на сервере. Нажмите кнопку ниже, чтобы установить его автоматически.
+            Скрипт установит PostgreSQL, создаст пользователя <code className="text-gold font-mono text-xs">accounting</code> и базу данных <code className="text-gold font-mono text-xs">accounting</code>.
+          </p>
+          <button onClick={handleInstall} disabled={dbInstalling}
+            className="px-5 py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors flex items-center gap-2 disabled:opacity-50">
+            {dbInstalling ? (
+              <>
+                <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+                Установка… (1-2 минуты)
+              </>
+            ) : (
+              <><Icon name="Database" size={15} /> Установить PostgreSQL</>
+            )}
+          </button>
+
+          {dbInstallResult && (
+            <div className={`mt-3 p-3 rounded-lg border text-sm ${
+              dbInstallResult.ok
+                ? "bg-green-900/20 border-green-900/30 text-green-400"
+                : "bg-red-900/20 border-red-900/30 text-red-400"
+            }`}>
+              {dbInstallResult.ok ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-medium">
+                    <Icon name="CheckCircle" size={16} />
+                    PostgreSQL успешно установлен!
+                  </div>
+                  {dbInstallResult.database_url_masked && (
+                    <div className="text-xs mt-1">
+                      DATABASE_URL: <code className="text-gold font-mono">{dbInstallResult.database_url_masked}</code>
+                    </div>
+                  )}
+                  {dbInstallResult.steps && (
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {dbInstallResult.steps.map((s, i) => (
+                        <div key={i}>✓ {s}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-medium">
+                    <Icon name="AlertCircle" size={16} />
+                    Ошибка установки
+                  </div>
+                  <div className="text-xs">{dbInstallResult.error}</div>
+                  {dbInstallResult.steps && (
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {dbInstallResult.steps.map((s, i) => (
+                        <div key={i}>✓ {s}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Ручная настройка DATABASE_URL ───── */}
+      <div className="card-fin p-4 sm:p-5">
+        <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 gold-line pl-3">
+          {installed ? "DATABASE_URL" : "Подключение к внешней БД"}
+        </div>
+        
+        {installed && (
+          <p className="text-xs text-muted-foreground mb-3">
+            Если PostgreSQL уже установлен, но DATABASE_URL не настроен автоматически — 
+            вставьте ссылку вручную.
+          </p>
+        )}
+
+        {!installed && (
+          <p className="text-sm text-muted-foreground mb-3">
+            Если у вас есть готовая PostgreSQL БД (например, от хостинга), вставьте её ссылку сюда.
+          </p>
+        )}
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={dbManualUrl}
+            onChange={(e) => setDbManualUrl(e.target.value)}
+            placeholder={installed ? "postgresql://user:pass@localhost:5432/accounting" : "postgresql://user:password@host:5432/dbname?sslmode=require"}
+            className="flex-1 bg-secondary border border-border rounded px-3 py-2.5 text-sm font-mono-fin text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold"
+          />
+          <button onClick={handleSaveUrl} disabled={dbSavingUrl || !dbManualUrl.trim()}
+            className="px-4 py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap">
+            {dbSavingUrl ? (
+              <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+            ) : (
+              <Icon name="Save" size={15} />
+            )}
+            Сохранить
+          </button>
+        </div>
+        {dbUrlSaved && (
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-positive">
+            <Icon name="CheckCircle" size={13} />
+            DATABASE_URL сохранён!
+          </div>
+        )}
+      </div>
+
+      {/* ── Миграции ──────────────────────────── */}
+      {installed && configured && (
+        <div className="card-fin p-4 sm:p-5">
+          <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 gold-line pl-3">Миграции базы данных</div>
+          
+          <p className="text-sm text-muted-foreground mb-3">
+            Создать таблицы в базе данных: транзакции, документы, налоговые отчёты, настройки ИИ и другие.
+          </p>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
+            <span>Всего миграций: <strong className="text-foreground">{dbStatus.migrations_total ?? dbStatus.migration_files?.length ?? "?"}</strong></span>
+            {dbStatus.migrations_applied !== undefined && (
+              <>
+                <span className="text-muted-foreground/50">|</span>
+                <span>Применено: <strong className="text-foreground">{dbStatus.migrations_applied}</strong></span>
+              </>
+            )}
+            {dbStatus.schema_exists && (
+              <>
+                <span className="text-muted-foreground/50">|</span>
+                <span className="text-green-400">✓ Схема существует</span>
+              </>
+            )}
+          </div>
+
+          <button onClick={handleMigrate} disabled={dbMigrating}
+            className="px-5 py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors flex items-center gap-2 disabled:opacity-50">
+            {dbMigrating ? (
+              <>
+                <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+                Выполнение миграций…
+              </>
+            ) : (
+              <><Icon name="Play" size={15} /> Запустить миграции</>
+            )}
+          </button>
+
+          {dbMigrateResult && (
+            <div className={`mt-3 p-3 rounded-lg border text-sm ${
+              dbMigrateResult.ok
+                ? "bg-green-900/20 border-green-900/30 text-green-400"
+                : "bg-red-900/20 border-red-900/30 text-red-400"
+            }`}>
+              {dbMigrateResult.ok ? (
+                <div>
+                  <div className="flex items-center gap-2 font-medium">
+                    <Icon name="CheckCircle" size={16} />
+                    Миграции выполнены!
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Применено: {dbMigrateResult.applied} / {dbMigrateResult.total}
+                  </div>
+                  {dbMigrateResult.errors && dbMigrateResult.errors.length > 0 && (
+                    <div className="text-xs text-red-400 mt-2">
+                      {dbMigrateResult.errors.map((e, i) => (
+                        <div key={i}>✗ {e}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2 font-medium">
+                    <Icon name="AlertCircle" size={16} />
+                    Ошибка миграций
+                  </div>
+                  <div className="text-xs mt-1">{dbMigrateResult.error}</div>
+                  {dbMigrateResult.errors && dbMigrateResult.errors.length > 0 && (
+                    <div className="text-xs mt-2">
+                      {dbMigrateResult.errors.map((e, i) => (
+                        <div key={i}>✗ {e}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Список миграций ──────────────────── */}
+      {dbStatus.migration_files && dbStatus.migration_files.length > 0 && (
+        <div className="card-fin p-4 sm:p-5">
+          <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 gold-line pl-3">Файлы миграций</div>
+          <div className="space-y-1">
+            {dbStatus.migration_files.map((f, i) => (
+              <div key={i} className="text-xs font-mono text-muted-foreground flex items-center gap-2">
+                <span className="w-4 h-4 rounded-full bg-secondary flex items-center justify-center text-[8px]">
+                  {i + 1}
+                </span>
+                {f}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Инструкция по внешней БД ────────── */}
+      {!installed && (
+        <div className="card-fin p-4 sm:p-5 border border-blue-900/30 bg-blue-900/10">
+          <div className="flex items-center gap-2 text-sm font-medium text-blue-300 mb-2">
+            <Icon name="Info" size={15} />
+            Как получить DATABASE_URL бесплатно
+          </div>
+          <div className="text-xs text-muted-foreground space-y-2">
+            <p>Вы можете использовать любую PostgreSQL БД:</p>
+            <ol className="list-none space-y-1.5">
+              <li className="flex gap-2">
+                <span className="text-blue-400 font-bold">1.</span>
+                <span><strong>Supabase:</strong> <code className="text-blue-300">supabase.com</code> — регистрация, создать проект → получить строку подключения</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-blue-400 font-bold">2.</span>
+                <span><strong>Aiven:</strong> <code className="text-blue-300">aiven.io</code> — бесплатный PostgreSQL на 1 ГБ</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-blue-400 font-bold">3.</span>
+                <span><strong>Railway:</strong> <code className="text-blue-300">railway.app</code> — быстрый старт</span>
+              </li>
+            </ol>
+            <p className="mt-2">Скопируйте строку вида <code className="text-blue-300">postgresql://user:pass@host:5432/db</code> и вставьте в поле выше.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

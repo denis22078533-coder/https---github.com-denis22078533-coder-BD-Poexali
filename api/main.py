@@ -18,6 +18,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Загружаем конфиг БД из файла (если есть) — до всего остального
+# ──────────────────────────────────────────────────────────────────────────────
+try:
+    from db_config import load_config
+    load_config()
+    print(f"[main] db_config loaded, DATABASE_URL={'set' if os.environ.get('DATABASE_URL') else 'NOT set'}")
+except Exception as e:
+    print(f"[main] db_config load warning: {e}")
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Настройки окружения
 # ──────────────────────────────────────────────────────────────────────────────
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p79040548_accounting_automatio")
@@ -97,6 +107,7 @@ module_paths = {
     "s3_settings": os.path.join(BASE_DIR, "s3-settings", "index.py"),
     "tax_reports": os.path.join(BASE_DIR, "tax-reports", "index.py"),
     "transactions": os.path.join(BASE_DIR, "transactions", "index.py"),
+    "db_settings": os.path.join(BASE_DIR, "db-settings", "index.py"),
 }
 
 for name, path in module_paths.items():
@@ -223,6 +234,11 @@ async def tax_reports_endpoint(request: Request):
 @app.api_route("/api/transactions", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def transactions_endpoint(request: Request):
     return await call_module_handler(request, "transactions")
+
+
+@app.api_route("/api/db-settings", methods=["GET", "POST", "PUT", "OPTIONS"])
+async def db_settings_endpoint(request: Request):
+    return await call_module_handler(request, "db_settings")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
