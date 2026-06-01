@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 
-const CHAT_URL = "https://functions.poehali.dev/1700fcd4-35b3-4a49-8472-292f760d2f96";
+const CHAT_URL = "/api/ai-chat";
 
 interface Message {
   id: number;

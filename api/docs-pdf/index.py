@@ -25,7 +25,6 @@ CORS = {
 MAX_IMG_PX = 600
 JPEG_QUALITY = 50
 FONT_PATH = "/tmp/DejaVuSans.ttf"
-FONT_S3_KEY = "fonts/DejaVuSans.ttf"
 FONT_FALLBACK_URL = "https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf"
 
 
@@ -37,46 +36,21 @@ def resp(status, body):
     return {"statusCode": status, "headers": CORS, "body": json.dumps(body, ensure_ascii=False, default=str)}
 
 
-def get_poehali_s3():
-    return boto3.client(
-        "s3",
-        endpoint_url="https://bucket.poehali.dev",
-        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-    )
+
 
 
 def load_font() -> str:
     """Загружает DejaVuSans с кириллицей. Возвращает имя шрифта."""
-    # Кэш
-    if os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 50_000:
-        pass
-    else:
-        # Из S3 поехали
+    if not (os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 50_000):
+        # Качаем из публичного CDN
         try:
-            s3 = get_poehali_s3()
-            obj = s3.get_object(Bucket="files", Key=FONT_S3_KEY)
-            data = obj["Body"].read()
-            if len(data) > 50_000:
+            r = requests.get(FONT_FALLBACK_URL, timeout=20)
+            if r.status_code == 200 and len(r.content) > 50_000:
                 with open(FONT_PATH, "wb") as f:
-                    f.write(data)
-                print(f"[docs-pdf] Font loaded from S3, size={len(data)}")
-        except Exception as e:
-            print(f"[docs-pdf] S3 font error: {e}")
-            # Из интернета
-            try:
-                r = requests.get(FONT_FALLBACK_URL, timeout=20)
-                if r.status_code == 200 and len(r.content) > 50_000:
-                    with open(FONT_PATH, "wb") as f:
-                        f.write(r.content)
-                    # Сохраняем в S3
-                    try:
-                        s3 = get_poehali_s3()
-                        s3.put_object(Bucket="files", Key=FONT_S3_KEY, Body=r.content, ContentType="font/ttf")
-                    except Exception:
-                        pass
-            except Exception as e2:
-                print(f"[docs-pdf] Font download failed: {e2}")
+                    f.write(r.content)
+                print(f"[docs-pdf] Font loaded from CDN, size={len(r.content)}")
+        except Exception as e2:
+            print(f"[docs-pdf] Font download failed: {e2}")
 
     if os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 50_000:
         from reportlab.pdfbase import pdfmetrics
@@ -134,28 +108,23 @@ def get_yandex_s3_cfg(conn):
 
 
 def save_pdf(pdf_bytes: bytes, filename: str, yc) -> str:
+    """Сохраняет PDF в Яндекс Object Storage. yc должен быть настроен."""
+    if not yc:
+        raise RuntimeError("Яндекс Object Storage не настроен. Укажите Access Key и имя бакета в Настройки → S3.")
     key = f"reports/{filename}"
-    if yc:
-        s3 = boto3.client(
-            "s3",
-            endpoint_url=yc["endpoint"],
-            aws_access_key_id=yc["access_key"],
-            aws_secret_access_key=yc["secret_key"],
-            config=Config(s3={"addressing_style": "virtual"}),
-            region_name="ru-central1",
-        )
-        s3.put_object(Bucket=yc["bucket"], Key=key, Body=pdf_bytes, ContentType="application/pdf",
-                      ContentDisposition=f'attachment; filename="{filename}"')
-        url = f"{yc['endpoint']}/{yc['bucket']}/{key}"
-        print(f"[docs-pdf] Saved to Yandex S3: {url}")
-        return url
-    else:
-        proj_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
-        s3 = get_poehali_s3()
-        s3.put_object(Bucket="files", Key=key, Body=pdf_bytes, ContentType="application/pdf")
-        url = f"https://cdn.poehali.dev/projects/{proj_key}/bucket/{key}"
-        print(f"[docs-pdf] Saved to CDN: {url}")
-        return url
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=yc["endpoint"],
+        aws_access_key_id=yc["access_key"],
+        aws_secret_access_key=yc["secret_key"],
+        config=Config(s3={"addressing_style": "virtual"}),
+        region_name="ru-central1",
+    )
+    s3.put_object(Bucket=yc["bucket"], Key=key, Body=pdf_bytes, ContentType="application/pdf",
+                  ContentDisposition=f'attachment; filename="{filename}"')
+    url = f"{yc['endpoint']}/{yc['bucket']}/{key}"
+    print(f"[docs-pdf] Saved to Yandex S3: {url}")
+    return url
 
 
 def draw_doc_slot(c, doc, num, x, y, slot_w, slot_h, font, max_img_h):
@@ -320,10 +289,13 @@ def handler(event: dict, context) -> dict:
         cur.close()
         conn.close()
 
-    if not docs:
+        if not docs:
         return resp(200, {"ok": False, "error": "Нет документов для генерации PDF"})
 
-    print(f"[docs-pdf] Building PDF for {len(docs)} docs, yandex={'yes' if yc else 'no'}")
+    if not yc:
+        return resp(400, {"error": "Яндекс Object Storage не настроен. Укажите Access Key и имя бакета в Настройки → S3."})
+
+    print(f"[docs-pdf] Building PDF for {len(docs)} docs")
     pdf_bytes = generate_pdf(docs)
 
     now_str = datetime.now().strftime("%Y%m%d_%H%M%S")

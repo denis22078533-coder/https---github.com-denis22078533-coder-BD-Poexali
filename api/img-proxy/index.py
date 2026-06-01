@@ -15,8 +15,6 @@ CORS = {
 
 ALLOWED_HOSTS = [
     "storage.yandexcloud.net",
-    "cdn.poehali.dev",
-    "bucket.poehali.dev",
 ]
 
 

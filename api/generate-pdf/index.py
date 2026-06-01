@@ -29,14 +29,7 @@ FONT_FALLBACK_URLS = [
 ]
 
 
-def get_s3():
-    """CDN поехали.dev — используется только для шрифта."""
-    return boto3.client(
-        "s3",
-        endpoint_url="https://bucket.poehali.dev",
-        aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
-        aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-    )
+
 
 
 def get_yandex_s3_cfg():
@@ -58,43 +51,30 @@ def get_yandex_s3_cfg():
 
 
 def save_pdf(pdf_bytes: bytes, filename: str) -> str:
-    """Сохраняет PDF: сначала пробует Яндекс S3, иначе — CDN поехали."""
+    """Сохраняет PDF в Яндекс Object Storage."""
     from botocore.config import Config
     yc = get_yandex_s3_cfg()
-    if yc:
-        s3 = boto3.client(
-            "s3",
-            endpoint_url=yc["endpoint"],
-            aws_access_key_id=yc["access_key"],
-            aws_secret_access_key=yc["secret_key"],
-            config=Config(s3={"addressing_style": "virtual"}),
-            region_name="ru-central1",
-        )
-        key = f"reports/{filename}"
-        s3.put_object(
-            Bucket=yc["bucket"],
-            Key=key,
-            Body=pdf_bytes,
-            ContentType="application/pdf",
-            ContentDisposition=f'attachment; filename="{filename}"',
-        )
-        url = f"{yc['endpoint']}/{yc['bucket']}/{key}"
-        print(f"[pdf] Saved to Yandex S3: {url}, size={len(pdf_bytes)}")
-        return url
-    else:
-        s3 = get_s3()
-        key = f"reports/{filename}"
-        proj_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
-        s3.put_object(
-            Bucket="files",
-            Key=key,
-            Body=pdf_bytes,
-            ContentType="application/pdf",
-            ContentDisposition=f'attachment; filename="{filename}"',
-        )
-        url = f"https://cdn.poehali.dev/projects/{proj_key}/bucket/{key}"
-        print(f"[pdf] Saved to Poehali CDN: {url}, size={len(pdf_bytes)}")
-        return url
+    if not yc:
+        raise RuntimeError("Яндекс Object Storage не настроен. Укажите Access Key и имя бакета в Настройки → S3.")
+    s3 = boto3.client(
+        "s3",
+        endpoint_url=yc["endpoint"],
+        aws_access_key_id=yc["access_key"],
+        aws_secret_access_key=yc["secret_key"],
+        config=Config(s3={"addressing_style": "virtual"}),
+        region_name="ru-central1",
+    )
+    key = f"reports/{filename}"
+    s3.put_object(
+        Bucket=yc["bucket"],
+        Key=key,
+        Body=pdf_bytes,
+        ContentType="application/pdf",
+        ContentDisposition=f'attachment; filename="{filename}"',
+    )
+    url = f"{yc['endpoint']}/{yc['bucket']}/{key}"
+    print(f"[pdf] Saved to Yandex S3: {url}, size={len(pdf_bytes)}")
+    return url
 
 
 def is_valid_ttf(data: bytes) -> bool:
@@ -104,7 +84,7 @@ def is_valid_ttf(data: bytes) -> bool:
 
 
 def download_font() -> bool:
-    """Загружает шрифт: кэш → S3 → внешние URL → сохраняет в S3."""
+    """Загружает шрифт: локальный кэш → публичные CDN URL."""
     # 1. Локальный кэш
     if os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 50_000:
         with open(FONT_PATH, "rb") as f:
@@ -112,20 +92,7 @@ def download_font() -> bool:
                 return True
         os.remove(FONT_PATH)
 
-    # 2. Из S3 проекта
-    try:
-        s3 = get_s3()
-        obj = s3.get_object(Bucket="files", Key=FONT_S3_KEY)
-        data = obj["Body"].read()
-        if is_valid_ttf(data):
-            with open(FONT_PATH, "wb") as f:
-                f.write(data)
-            print(f"[pdf] Font loaded from S3, size={len(data)}")
-            return True
-    except Exception as e:
-        print(f"[pdf] S3 font not found: {e}")
-
-    # 3. Внешние URL → сохраняем в S3 для следующих вызовов
+    # 2. Публичные CDN URL
     for url in FONT_FALLBACK_URLS:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
@@ -134,13 +101,7 @@ def download_font() -> bool:
             if is_valid_ttf(data):
                 with open(FONT_PATH, "wb") as f:
                     f.write(data)
-                # Сохраняем в S3 чтобы больше не качать
-                try:
-                    s3 = get_s3()
-                    s3.put_object(Bucket="files", Key=FONT_S3_KEY, Body=data, ContentType="font/ttf")
-                    print(f"[pdf] Font saved to S3 from {url}")
-                except Exception as se:
-                    print(f"[pdf] Could not save font to S3: {se}")
+                print(f"[pdf] Font loaded from {url}, size={len(data)}")
                 return True
         except Exception as e:
             print(f"[pdf] Font URL failed {url}: {e}")
@@ -501,7 +462,7 @@ def handler(event: dict, context) -> dict:
             pdf_bytes = generate_report_pdf(txs, date_from or "2000-01-01", date_to, income_total, expense_total, vat_rate, expense_cashless)
             filename = f"Otchet_IP_{period}.pdf"
 
-        # Сохраняем PDF в Яндекс S3 (или CDN если Яндекс не настроен)
+                # Сохраняем PDF в Яндекс Object Storage
         download_url = save_pdf(pdf_bytes, filename)
 
         return {

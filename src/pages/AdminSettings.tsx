@@ -77,8 +77,8 @@ export default function AdminSettings() {
     yandex?: { ok: boolean | null; error?: string };
   } | null>(null);
 
-  // S3
-  const [s3, setS3] = useState<S3Settings>({ bucket_name: "", endpoint_url: "https://storage.yandexcloud.net", access_key: "", secret_key_masked: "", use_yandex: false });
+  // S3 — всегда Яндекс Object Storage
+  const [s3, setS3] = useState<S3Settings>({ bucket_name: "", endpoint_url: "https://storage.yandexcloud.net", access_key: "", secret_key_masked: "", use_yandex: true });
   const [s3SecretInput, setS3SecretInput] = useState("");
   const [showS3Secret, setShowS3Secret] = useState(false);
   const [s3Saving, setS3Saving] = useState(false);
@@ -118,7 +118,7 @@ export default function AdminSettings() {
         bucket_name: s3.bucket_name,
         endpoint_url: s3.endpoint_url,
         access_key: s3.access_key,
-        use_yandex: s3.use_yandex,
+        use_yandex: true,
       };
       if (s3SecretInput.trim()) payload.secret_key = s3SecretInput.trim();
       const res = await api.s3Settings.update(payload);
@@ -729,21 +729,13 @@ export default function AdminSettings() {
         <div className="text-xs uppercase tracking-widest text-muted-foreground mb-1 gold-line pl-3">Яндекс Object Storage (S3)</div>
         <div className="text-xs text-muted-foreground mb-4 pl-3">Хранилище для фото документов и PDF-отчётов</div>
 
-        {/* Переключатель */}
-        <div className="mb-4 flex items-center justify-between p-3 rounded-lg border border-border bg-secondary/30">
+        <div className="mb-4 flex items-center p-3 rounded-lg border border-gold/30 bg-gold/5">
           <div>
-            <div className="text-sm font-medium">{s3.use_yandex ? "Яндекс Object Storage активен" : "Поехали CDN активен"}</div>
-            <div className="text-xs text-muted-foreground mt-0.5">{s3.use_yandex ? "Файлы сохраняются в ваш Яндекс бакет" : "Файлы сохраняются во встроенное хранилище поехали.dev"}</div>
+            <div className="text-sm font-medium text-gold">Яндекс Object Storage</div>
+            <div className="text-xs text-muted-foreground mt-0.5">Файлы сохраняются в ваш Яндекс бакет</div>
           </div>
-          <button onClick={() => setS3((s) => ({ ...s, use_yandex: !s.use_yandex }))}
-            className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${s3.use_yandex ? "bg-gold" : "bg-border"}`}>
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${s3.use_yandex ? "translate-x-5" : "translate-x-0"}`} />
-          </button>
-        </div>
 
-        {/* Инструкция и поля — только если Яндекс включён */}
-        {s3.use_yandex && (
-          <div className="space-y-3">
+      <div className="space-y-3">
             <div className="rounded-lg border border-border bg-secondary/40 p-4 space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium text-gold">
                 <Icon name="BookOpen" size={15} />
@@ -826,8 +818,7 @@ export default function AdminSettings() {
                 <div>{s3TestResult.ok ? (s3TestResult.message || "Подключение успешно!") : (s3TestResult.error || "Ошибка подключения")}</div>
               </div>
             )}
-          </div>
-        )}
+
       </div>
 
       {/* S3 action buttons */}
@@ -842,9 +833,8 @@ export default function AdminSettings() {
           {s3Testing ? <div className="w-4 h-4 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" /> : <Icon name="HardDrive" size={15} />}
           Проверить связь S3
         </button>
-        {s3.use_yandex && (
-          <>
-            <button
+        <>
+          <button
               onClick={async () => {
                 setFixingAcl(true);
                 setFixAclResult(null);
@@ -862,8 +852,7 @@ export default function AdminSettings() {
               {fixingAcl ? <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" /> : <Icon name="Eye" size={15} />}
               Открыть доступ к фото
             </button>
-          </>
-        )}
+        </>
         {s3Saved && <span className="flex items-center gap-1.5 text-xs text-positive animate-fade-in"><Icon name="CheckCircle" size={13} /> Сохранено</span>}
         {s3SaveError && <span className="flex items-center gap-1.5 text-xs text-negative animate-fade-in"><Icon name="AlertCircle" size={13} /> {s3SaveError}</span>}
         {fixAclResult && (

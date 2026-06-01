@@ -98,7 +98,7 @@ def handler(event: dict, context) -> dict:
                 return resp(200, {"settings": {
                     "bucket_name": "", "endpoint_url": YANDEX_ENDPOINT,
                     "access_key": "", "secret_key_masked": "",
-                    "configured": False, "use_yandex": False,
+                    "configured": False, "use_yandex": True,
                 }})
             return resp(200, {"settings": {
                 "bucket_name": s["bucket_name"],
@@ -106,7 +106,7 @@ def handler(event: dict, context) -> dict:
                 "access_key": s["access_key"],
                 "secret_key_masked": mask(s["secret_key"]),
                 "configured": bool(s["access_key"] and s["bucket_name"]),
-                "use_yandex": s["use_yandex"],
+                                "use_yandex": True,
             }})
 
         # PUT / — сохранить настройки
@@ -117,7 +117,7 @@ def handler(event: dict, context) -> dict:
             endpoint = body.get("endpoint_url", s["endpoint_url"] if s else YANDEX_ENDPOINT) or YANDEX_ENDPOINT
             access = body.get("access_key", s["access_key"] if s else "")
             secret = body.get("secret_key") or (s["secret_key"] if s else "")
-            use_yandex = body.get("use_yandex", s["use_yandex"] if s else False)
+            use_yandex = True  # всегда принудительно Яндекс
 
             if s:
                 cur.execute(f"""

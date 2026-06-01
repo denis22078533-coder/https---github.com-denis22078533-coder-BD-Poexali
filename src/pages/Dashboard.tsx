@@ -4,36 +4,32 @@ import { api, fmt, type DashboardSummary } from "@/lib/api";
 
 const BANNERS = [
   {
-    img: "https://cdn.poehali.dev/projects/c9681124-9e6c-427c-98d2-241fbe701153/files/e7b21a8b-6a13-4499-8813-0c6f8361e390.jpg",
+    img: "",
     tag: "Butsky Group",
     title: "Команда профессионалов\nна страже вашего учёта",
     sub: "Интеллектуальная автоматизация учёта, созданная экспертом",
-    emblem: "flag",
-    imgPos: "center 30%",
+    emblem: "brand",
   },
   {
-    img: "https://cdn.poehali.dev/projects/c9681124-9e6c-427c-98d2-241fbe701153/files/40fb5983-5ead-4755-bd67-d8b3b24f4c48.jpg",
+    img: "",
     tag: "Бухучёт с телефона",
     title: "Сфотографировал —\nдокумент уже в системе",
     sub: "ИИ распознаёт накладные, чеки и счета за секунды",
-    emblem: "flag",
-    imgPos: "center 25%",
+    emblem: "brand",
   },
   {
-    img: "https://cdn.poehali.dev/projects/c9681124-9e6c-427c-98d2-241fbe701153/files/21d744fc-102d-4f89-9c13-1bba5d829503.jpg",
+    img: "",
     tag: "Автоматический расчёт",
     title: "Налоги и отчёты\nсчитаются сами",
     sub: "Полная налоговая отчётность формируется в один клик",
-    emblem: "coa",
-    imgPos: "center 20%",
+    emblem: "brand",
   },
   {
-    img: "https://cdn.poehali.dev/projects/c9681124-9e6c-427c-98d2-241fbe701153/files/4e07e443-2aee-4874-9dbe-9a6f3732e740.jpg",
+    img: "",
     tag: "Простота и надёжность",
     title: "Максимальная простота\nфинансового учёта",
     sub: "Авторская программа — надёжно, быстро, без лишнего",
-    emblem: "coa",
-    imgPos: "center top",
+    emblem: "brand",
   },
   {
     img: "",
@@ -135,48 +131,34 @@ function HeroBanner() {
         </>
       )}
 
-      {/* Флаг / Герб России — правый верхний угол */}
+      {/* Эмблема бренда — правый верхний угол */}
       <div
         className="absolute top-4 right-4 z-10 transition-opacity duration-300"
         style={{ opacity: animating ? 0 : 1 }}
       >
-        {b.emblem === "flag" && (
-          <div className="flex flex-col overflow-hidden rounded shadow-lg" style={{ width: 38, height: 26 }}>
-            <div style={{ flex: 1, background: "#FFFFFF" }} />
-            <div style={{ flex: 1, background: "#0039A6" }} />
-            <div style={{ flex: 1, background: "#D52B1E" }} />
-          </div>
-        )}
-        {b.emblem === "coa" && (
-          <div
-            className="rounded overflow-hidden shadow-lg"
-            style={{ width: 44, height: 44, background: "#000" }}
-          >
-            <img
-              src="https://cdn.poehali.dev/projects/c9681124-9e6c-427c-98d2-241fbe701153/files/227b28b7-cfae-444a-8fbe-aad15fffab8e.jpg"
-              alt="Герб России"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 bg-black/30 backdrop-blur-sm rounded-lg px-2.5 py-1.5">
+          <svg width="18" height="18" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="18,2 33,10 33,26 18,34 3,26 3,10" fill="#0F172A" stroke="#0284C7" strokeWidth="1.5"/>
+            <text x="18" y="23" textAnchor="middle" fontFamily="Inter, sans-serif" fontWeight="700" fontSize="12" fill="#ffffff" letterSpacing="-0.5">BG</text>
+          </svg>
+          <span className="text-[10px] font-medium text-white/90">Butsky Group</span>
+        </div>
       </div>
 
-      {/* Content — только для баннеров с фото */}
-      {b.img && (
-        <div
-          className="relative z-10 h-full flex flex-col justify-end p-5 sm:p-7 transition-opacity duration-300"
-          style={{ opacity: animating ? 0 : 1 }}
-        >
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest text-[#0284C7] uppercase mb-2">
-            <span className="w-1 h-1 rounded-full bg-[#0284C7]" />
-            {b.tag}
-          </span>
-          <h2 className="text-lg sm:text-2xl font-bold text-white leading-tight mb-1.5 whitespace-pre-line">
-            {b.title}
-          </h2>
-          <p className="text-sm text-white/70 max-w-sm">{b.sub}</p>
-        </div>
-      )}
+      {/* Content — всегда поверх градиента */}
+      <div
+        className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-7 transition-opacity duration-300"
+        style={{ opacity: animating ? 0 : 1 }}
+      >
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest text-[#0284C7] uppercase mb-2">
+          <span className="w-1 h-1 rounded-full bg-[#0284C7]" />
+          {b.tag}
+        </span>
+        <h2 className="text-lg sm:text-2xl font-bold text-white leading-tight mb-1.5 whitespace-pre-line">
+          {b.title}
+        </h2>
+        <p className="text-sm text-white/70 max-w-sm">{b.sub}</p>
+      </div>
 
       {/* Dots */}
       <div className="absolute bottom-4 right-5 flex gap-1.5 z-10">

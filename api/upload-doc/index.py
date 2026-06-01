@@ -1,8 +1,6 @@
 """
-Загрузка документа в S3.
-Если use_yandex=true — загружает в Яндекс Object Storage.
-Если use_yandex=false — загружает в CDN поехали.dev (по умолчанию).
-POST / — принимает base64-файл, загружает в S3, возвращает URL.
+Загрузка документа в Яндекс Object Storage (S3).
+POST / — принимает base64-файл, загружает в Яндекс S3, возвращает URL.
 Body: { file_b64, file_name, mime_type, doc_id }
 """
 import json
@@ -63,23 +61,11 @@ def upload_to_yandex(endpoint, bucket, key, data, content_type, access_key, secr
     return url
 
 
-def upload_to_poehali(key, data, content_type):
-    """Загружает файл в CDN поехали.dev (хранилище по умолчанию)."""
-    proj_key = os.environ.get("AWS_ACCESS_KEY_ID", "")
-    s3 = boto3.client(
-        "s3",
-        endpoint_url="https://bucket.poehali.dev",
-        aws_access_key_id=proj_key,
-        aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY", ""),
-    )
-    s3.put_object(Bucket="files", Key=key, Body=data, ContentType=content_type)
-    url = f"https://cdn.poehali.dev/projects/{proj_key}/bucket/{key}"
-    print(f"[upload-doc] Poehali CDN OK: {url}")
-    return url
+
 
 
 def handler(event: dict, context) -> dict:
-    """Загружает документ: в Яндекс S3 если включён, иначе в CDN поехали.dev."""
+    """Загружает документ в Яндекс Object Storage."""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
@@ -134,19 +120,19 @@ def handler(event: dict, context) -> dict:
         safe_name = (file_name or "document").replace(" ", "_").replace("/", "_")
         key = f"{folder}/{now.strftime('%H%M%S')}_{safe_name}"
 
-        # Выбор хранилища: Яндекс или поехали CDN
-        if s3cfg and s3cfg["use_yandex"] and s3cfg["access_key"]:
-            try:
-                file_url = upload_to_yandex(
-                    s3cfg["endpoint"] or "https://storage.yandexcloud.net",
-                    s3cfg["bucket"], key, file_bytes, mime_type,
-                    s3cfg["access_key"], s3cfg["secret_key"]
-                )
-            except Exception as e:
-                print(f"[upload-doc] Yandex error, fallback to Poehali: {e}")
-                file_url = upload_to_poehali(key, file_bytes, mime_type)
-        else:
-            file_url = upload_to_poehali(key, file_bytes, mime_type)
+                # Загрузка в Яндекс Object Storage (должен быть настроен)
+        if not s3cfg or not s3cfg["access_key"] or not s3cfg["bucket"]:
+            return resp(400, {"error": "Яндекс Object Storage не настроен. Укажите Access Key и имя бакета в Настройки → S3."})
+
+        try:
+            file_url = upload_to_yandex(
+                s3cfg["endpoint"] or "https://storage.yandexcloud.net",
+                s3cfg["bucket"], key, file_bytes, mime_type,
+                s3cfg["access_key"], s3cfg["secret_key"]
+            )
+        except Exception as e:
+            print(f"[upload-doc] Yandex error: {e}")
+            return resp(500, {"error": f"Ошибка загрузки в Яндекс S3: {e}"})
 
         if doc_id:
             try:
