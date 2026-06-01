@@ -18,17 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Загружаем конфиг БД из файла (если есть) — до всего остального
-# ──────────────────────────────────────────────────────────────────────────────
-try:
-    from db_config import load_config
-    load_config()
-    print(f"[main] db_config loaded, DATABASE_URL={'set' if os.environ.get('DATABASE_URL') else 'NOT set'}")
-except Exception as e:
-    print(f"[main] db_config load warning: {e}")
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Настройки окружения
+# Настройки окружения (DATABASE_URL задаётся в api/index.py)
 # ──────────────────────────────────────────────────────────────────────────────
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "t_p79040548_accounting_automatio")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")

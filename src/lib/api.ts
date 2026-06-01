@@ -216,29 +216,29 @@ export const api = {
   // ─── Database Settings ─────────────────────────
   dbSettings: {
     get: () =>
-      request<DbSettingsStatus>("http://89.108.88.207:8000/api/db-settings"),
+      request<DbSettingsStatus>("/api/db-settings"),
 
     install: () =>
       request<{ ok: boolean; steps?: string[]; error?: string; database_url_masked?: string }>(
-        "http://89.108.88.207:8000/api/db-settings",
+        "/api/db-settings",
         { method: "POST", body: JSON.stringify({ action: "install" }) }
       ),
 
     configure: (database_url: string) =>
       request<{ ok: boolean; message?: string; error?: string }>(
-        "http://89.108.88.207:8000/api/db-settings",
+        "/api/db-settings",
         { method: "POST", body: JSON.stringify({ action: "configure", database_url }) }
       ),
 
     migrate: () =>
       request<{ ok: boolean; applied?: number; total?: number; errors?: string[]; error?: string }>(
-        "http://89.108.88.207:8000/api/db-settings",
+        "/api/db-settings",
         { method: "POST", body: JSON.stringify({ action: "migrate" }) }
       ),
 
     test: () =>
       request<{ ok: boolean; message?: string; error?: string }>(
-        "http://89.108.88.207:8000/api/db-settings",
+        "/api/db-settings",
         { method: "POST", body: JSON.stringify({ action: "test" }) }
       ),
   },
