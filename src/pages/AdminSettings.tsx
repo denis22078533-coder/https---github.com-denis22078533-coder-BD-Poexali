@@ -1015,12 +1015,115 @@ function DatabaseSettings({
   const configured = dbStatus?.configured ?? false;
   const connected = dbStatus?.connected ?? false;
 
+  // Если статус ещё не получен — показываем кнопку для ручной проверки
   if (!dbStatus) {
     return (
-      <div className="card-fin p-5">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <div className="w-5 h-5 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
-          Проверка статуса…
+      <div className="space-y-4 animate-fade-in">
+        {/* Приветственная карточка */}
+        <div className="card-fin p-5 border border-gold/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-gold/15 flex items-center justify-center">
+              <Icon name="Database" size={20} className="text-gold" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold">База данных</h3>
+              <p className="text-xs text-muted-foreground">Настройка PostgreSQL для хранения документов и транзакций</p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border bg-secondary/40 p-4 mb-4">
+            <p className="text-sm text-muted-foreground mb-3">
+              Для работы приложения требуется база данных PostgreSQL. У вас есть два способа:
+            </p>
+            <div className="space-y-3">
+              <div className="flex gap-3 p-3 rounded-lg bg-gold/5 border border-gold/20">
+                <Icon name="Wifi" size={16} className="text-gold flex-shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-sm font-medium text-gold">Способ 1 — автоматическая установка на сервер</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Нажмите кнопку «Проверить статус» ниже, затем «Установить PostgreSQL». 
+                    Сервер сам установит БД и настроит подключение.
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 p-3 rounded-lg bg-blue-900/10 border border-blue-900/30">
+                <Icon name="Link" size={16} className="text-blue-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <div className="text-sm font-medium text-blue-300">Способ 2 — подключить внешнюю БД</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Если у вас есть готовая PostgreSQL (например, на Supabase, Aiven), 
+                    вставьте её DATABASE_URL в поле ниже.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button onClick={handleRefresh}
+            className="px-5 py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors flex items-center gap-2">
+            <Icon name="Search" size={15} />
+            Проверить статус
+          </button>
+        </div>
+
+        {/* Поле для ручного ввода DATABASE_URL */}
+        <div className="card-fin p-4 sm:p-5">
+          <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 gold-line pl-3">
+            Подключить внешнюю БД
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Вставьте DATABASE_URL от вашего PostgreSQL-провайдера:
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={dbManualUrl}
+              onChange={(e) => setDbManualUrl(e.target.value)}
+              placeholder="postgresql://user:password@host:5432/dbname?sslmode=require"
+              className="flex-1 bg-secondary border border-border rounded px-3 py-2.5 text-sm font-mono-fin text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold"
+            />
+            <button onClick={handleSaveUrl} disabled={dbSavingUrl || !dbManualUrl.trim()}
+              className="px-4 py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors flex items-center gap-2 disabled:opacity-50 whitespace-nowrap">
+              {dbSavingUrl ? (
+                <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+              ) : (
+                <Icon name="Save" size={15} />
+              )}
+              Сохранить
+            </button>
+          </div>
+          {dbUrlSaved && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-positive">
+              <Icon name="CheckCircle" size={13} />
+              DATABASE_URL сохранён!
+            </div>
+          )}
+        </div>
+
+        {/* Инструкция */}
+        <div className="card-fin p-4 sm:p-5 border border-blue-900/30 bg-blue-900/10">
+          <div className="flex items-center gap-2 text-sm font-medium text-blue-300 mb-2">
+            <Icon name="Info" size={15} />
+            Как получить DATABASE_URL бесплатно
+          </div>
+          <div className="text-xs text-muted-foreground space-y-2">
+            <p>Вы можете использовать любую PostgreSQL БД:</p>
+            <ol className="list-none space-y-1.5">
+              <li className="flex gap-2">
+                <span className="text-blue-400 font-bold">1.</span>
+                <span><strong>Supabase:</strong> <code className="text-blue-300">supabase.com</code> — регистрация → проект → получить строку подключения (Connection string)</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-blue-400 font-bold">2.</span>
+                <span><strong>Aiven:</strong> <code className="text-blue-300">aiven.io</code> — бесплатный PostgreSQL на 1 ГБ</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="text-blue-400 font-bold">3.</span>
+                <span><strong>Railway:</strong> <code className="text-blue-300">railway.app</code> — быстрый старт</span>
+              </li>
+            </ol>
+            <p className="mt-2">Скопируйте строку вида <code className="text-blue-300">postgresql://user:pass@host:5432/db</code> и вставьте в поле выше.</p>
+          </div>
         </div>
       </div>
     );
