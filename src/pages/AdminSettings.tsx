@@ -53,9 +53,6 @@ export default function AdminSettings() {
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [editKey, setEditKey] = useState(false);
-  const [geminiKeyInput, setGeminiKeyInput] = useState("");
-  const [showGeminiKey, setShowGeminiKey] = useState(false);
-  const [editGeminiKey, setEditGeminiKey] = useState(false);
   const [yandexKeyInput, setYandexKeyInput] = useState("");
   const [yandexFolderInput, setYandexFolderInput] = useState("");
   const [showYandexKey, setShowYandexKey] = useState(false);
@@ -163,9 +160,6 @@ export default function AdminSettings() {
       if (apiKeyInput.trim()) {
         payload.api_key = apiKeyInput.trim();
       }
-      if (geminiKeyInput.trim()) {
-        payload.gemini_api_key = geminiKeyInput.trim();
-      }
       if (yandexKeyInput.trim()) {
         payload.yandex_api_key = yandexKeyInput.trim();
       }
@@ -178,7 +172,6 @@ export default function AdminSettings() {
       const res = await api.aiSettings.update(payload);
       setSettings(res.settings);
       if (apiKeyInput.trim()) { setApiKeyInput(""); setEditKey(false); }
-      if (geminiKeyInput.trim()) { setGeminiKeyInput(""); setEditGeminiKey(false); }
       if (yandexKeyInput.trim()) { setYandexKeyInput(""); setEditYandexKey(false); }
       if (yandexFolderInput.trim()) setYandexFolderInput("");
       if (proxyapiKeyInput.trim()) { setProxyapiKeyInput(""); setEditProxyapiKey(false); }
@@ -480,62 +473,6 @@ export default function AdminSettings() {
             <div className="text-xs text-muted-foreground">
               {visionProviders.find(v => v.id === (settings.vision_provider || "proxyapi-gpt-4o"))?.desc}
             </div>
-          </div>
-
-          {/* Gemini API Key — для распознавания фото */}
-          <div className="rounded-lg border border-blue-900/30 bg-blue-900/10 p-3 sm:p-3.5 space-y-2.5">
-            <div className="flex items-start gap-2 flex-wrap">
-              <Icon name="ScanLine" size={15} className="text-blue-400 flex-shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-blue-300">Google Gemini — распознавание фото</div>
-                <div className="text-xs text-muted-foreground">Бесплатно. Для чтения накладных и чеков</div>
-              </div>
-              {settings.gemini_key_set && (
-                <span className="flex items-center gap-1 text-xs text-positive whitespace-nowrap flex-shrink-0"><Icon name="CheckCircle" size={11} />Ключ есть</span>
-              )}
-            </div>
-            <div className="relative">
-              {settings.gemini_key_set && !editGeminiKey ? (
-                <div className="relative flex items-center w-full bg-secondary border border-border rounded px-3 sm:px-4 py-2.5 pr-16 sm:pr-20">
-                  <span className="text-xs sm:text-sm font-mono-fin text-foreground flex-1 truncate">
-                    {showGeminiKey ? settings.gemini_key_masked : "AIza" + "●".repeat(16) + settings.gemini_key_masked?.slice(-4)}
-                  </span>
-                  <div className="absolute right-1.5 flex items-center gap-0.5">
-                    <button type="button" onClick={() => setShowGeminiKey(v => !v)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                      <Icon name={showGeminiKey ? "EyeOff" : "Eye"} size={15} />
-                    </button>
-                    <button type="button" onClick={() => { setEditGeminiKey(true); setShowGeminiKey(false); }} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-blue-400 transition-colors" title="Заменить ключ">
-                      <Icon name="Pencil" size={13} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <input
-                    autoFocus={editGeminiKey}
-                    type={showGeminiKey ? "text" : "password"}
-                    value={geminiKeyInput}
-                    onChange={(e) => setGeminiKeyInput(e.target.value)}
-                    placeholder="Вставьте ключ AIzaSy..."
-                    className="w-full bg-secondary border border-blue-500/50 rounded px-3 sm:px-4 py-2.5 text-sm font-mono-fin text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-16"
-                  />
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-                    <button type="button" onClick={() => setShowGeminiKey(v => !v)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                      <Icon name={showGeminiKey ? "EyeOff" : "Eye"} size={15} />
-                    </button>
-                    {editGeminiKey && (
-                      <button type="button" onClick={() => { setEditGeminiKey(false); setGeminiKeyInput(""); }} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                        <Icon name="X" size={14} />
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
-              <Icon name="ExternalLink" size={12} /> Получить бесплатный ключ на aistudio.google.com
-            </a>
           </div>
 
           {/* Yandex Vision — распознавание фото (приоритетный) */}
@@ -907,11 +844,11 @@ interface DatabaseSettingsProps {
   dbInstalling: boolean;
   setDbInstalling: (v: boolean) => void;
   dbInstallResult: { ok?: boolean; steps?: string[]; error?: string; database_url_masked?: string } | null;
-  setDbInstallResult: (v: any) => void;
+  setDbInstallResult: (v: { ok?: boolean; steps?: string[]; error?: string; database_url_masked?: string } | null) => void;
   dbMigrating: boolean;
   setDbMigrating: (v: boolean) => void;
   dbMigrateResult: { ok?: boolean; applied?: number; total?: number; errors?: string[]; error?: string } | null;
-  setDbMigrateResult: (v: any) => void;
+  setDbMigrateResult: (v: { ok?: boolean; applied?: number; total?: number; errors?: string[]; error?: string } | null) => void;
   dbManualUrl: string;
   setDbManualUrl: (v: string) => void;
   dbSavingUrl: boolean;
