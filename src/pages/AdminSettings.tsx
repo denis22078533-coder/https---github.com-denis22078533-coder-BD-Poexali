@@ -38,7 +38,6 @@ const visionProviders = [
   { id: "proxyapi-gemini-2.0-flash", name: "Gemini 2.0 Flash Vision", desc: "Быстрый, многостраничный" },
   { id: "proxyapi-gemini-1.5-pro", name: "Gemini 1.5 Pro Vision", desc: "Максимум точности Google" },
   { id: "yandex", name: "Яндекс Vision OCR (свой ключ)", desc: "Отличен для русского — нужен Folder ID" },
-  { id: "gemini", name: "Google Gemini (свой ключ)", desc: "Прямой ключ Google AI Studio" },
 ];
 
 export default function AdminSettings() {

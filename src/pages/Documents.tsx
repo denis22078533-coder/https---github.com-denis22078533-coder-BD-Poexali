@@ -92,6 +92,7 @@ export default function Documents() {
   const [pendingDateFile, setPendingDateFile] = useState<File | null>(null);
   const [pendingDatePreviewUrl, setPendingDatePreviewUrl] = useState<string | undefined>();
   const [pendingDateAlreadyUrl, setPendingDateAlreadyUrl] = useState<string | undefined>();
+  const [pendingDateMultiImages, setPendingDateMultiImages] = useState<{ b64: string; mime: string }[] | undefined>();
 
   // ── Load ─────────────────────────────────────────────────
   const loadDocs = async () => {
@@ -177,14 +178,21 @@ export default function Documents() {
 
   // ── Продолжение сохранения после ручного ввода даты ───────
   // userDate может быть undefined, если пользователь нажал «Пропустить»
-  const completeRecognitionWithDate = async (docId: number, userDate: string | undefined, file: File, previewUrl?: string, alreadyUploadedUrl?: string) => {
+  // multiImages — для многостраничных документов, когда файл псевдо-пустой
+  const completeRecognitionWithDate = async (
+    docId: number,
+    userDate: string | undefined,
+    file: File,
+    previewUrl?: string,
+    alreadyUploadedUrl?: string,
+    multiImages?: { b64: string; mime: string }[],
+  ) => {
     try {
       let result;
-      // Повторно распознавать не нужно — результат уже есть в selected/recognition,
-      // но мы его не сохранили. Загружаем свежий список, чтобы получить recognition из БД,
-      // либо повторяем распознавание. Проще всего — повторно вызвать recognizeDoc без даты,
-      // а дату передать в update вручную.
-      if (isImage(file.name)) {
+      if (multiImages && multiImages.length > 0) {
+        // Многостраничный случай — перераспознаём с сохранёнными images
+        result = await api.recognizeDoc({ images: multiImages, file_name: file.name, doc_id: docId, auto_create_tx: true });
+      } else if (isImage(file.name)) {
         const compressed = await compressImageToBase64(file, 1600, 0.65, false);
         result = await api.recognizeDoc({ image_b64: compressed.b64, mime_type: compressed.mime, file_name: file.name, doc_id: docId, auto_create_tx: true });
       } else if (isExcel(file.name)) {
@@ -220,10 +228,24 @@ export default function Documents() {
     try {
       const result = await api.recognizeDoc({ images, file_name: fileName, doc_id: docId, auto_create_tx: true });
       if (!result.error) {
+        // Если ИИ не распознал дату — показываем диалог
+        if (!result.date) {
+          setPendingDateDocId(docId);
+          // Сохраняем images для многостраничного документа
+          setPendingDateMultiImages(images);
+          // Псевдо-файл с именем
+          const pseudoFile = new File([], fileName, { type: "application/octet-stream" });
+          Object.defineProperty(pseudoFile, "name", { value: fileName });
+          setPendingDateFile(pseudoFile);
+          setPendingDatePreviewUrl(previewUrl);
+          setPendingDateAlreadyUrl(undefined);
+          setShowDatePrompt(true);
+          return;
+        }
         await api.documents.update(docId, {
           status: "done", rec_type: result.doc_type,
           rec_amount: result.amount_str || (result.amount ? `₽ ${result.amount}` : undefined),
-          rec_date: result.date || undefined, rec_counterparty: result.counterparty || undefined, rec_inn: result.inn || undefined,
+          rec_date: result.date, rec_counterparty: result.counterparty || undefined, rec_inn: result.inn || undefined,
         });
       } else {
         await api.documents.update(docId, { status: "error" }).catch(() => {});
@@ -561,28 +583,31 @@ export default function Documents() {
     const file = pendingDateFile;
     const previewUrl = pendingDatePreviewUrl;
     const alreadyUrl = pendingDateAlreadyUrl;
+    const multiImages = pendingDateMultiImages;
     setPendingDateDocId(null);
     setPendingDateFile(null);
     setPendingDatePreviewUrl(undefined);
     setPendingDateAlreadyUrl(undefined);
+    setPendingDateMultiImages(undefined);
     if (docId !== null && file !== null) {
-      completeRecognitionWithDate(docId, date, file, previewUrl, alreadyUrl);
+      completeRecognitionWithDate(docId, date, file, previewUrl, alreadyUrl, multiImages);
     }
   };
 
   const handleDateSkip = () => {
     setShowDatePrompt(false);
-    // Сохраняем документ без даты (передаём undefined)
     const docId = pendingDateDocId;
     const file = pendingDateFile;
     const previewUrl = pendingDatePreviewUrl;
     const alreadyUrl = pendingDateAlreadyUrl;
+    const multiImages = pendingDateMultiImages;
     setPendingDateDocId(null);
     setPendingDateFile(null);
     setPendingDatePreviewUrl(undefined);
     setPendingDateAlreadyUrl(undefined);
+    setPendingDateMultiImages(undefined);
     if (docId !== null && file !== null) {
-      completeRecognitionWithDate(docId, undefined as unknown as string, file, previewUrl, alreadyUrl);
+      completeRecognitionWithDate(docId, undefined as unknown as string, file, previewUrl, alreadyUrl, multiImages);
     }
   };
 
