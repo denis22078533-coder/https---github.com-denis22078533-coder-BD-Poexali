@@ -105,18 +105,20 @@ def get_full_status() -> dict:
         if not status["running"]:
             status["running"] = True
 
-        # Проверяем таблицы
+        # Проверяем таблицы в схеме MAIN_DB_SCHEMA (или public если не задана)
+        check_schema = os.environ.get("MAIN_DB_SCHEMA", "public")
         cur.execute("""
             SELECT COUNT(*) FROM information_schema.tables
-            WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-        """)
+            WHERE table_schema = %s AND table_type = 'BASE TABLE'
+        """, (check_schema,))
         status["tables_count"] = cur.fetchone()[0]
+        status["current_schema"] = check_schema
 
         cur.execute("""
             SELECT table_name FROM information_schema.tables
-            WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+            WHERE table_schema = %s AND table_type = 'BASE TABLE'
             ORDER BY table_name
-        """)
+        """, (check_schema,))
         status["tables"] = [r[0] for r in cur.fetchall()]
 
         status["schema_exists"] = status["tables_count"] > 0

@@ -588,34 +588,7 @@ export default function AdminSettings() {
           </div>
 
       <div className="space-y-3">
-            <div className="rounded-lg border border-border bg-secondary/40 p-4 space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-gold">
-                <Icon name="BookOpen" size={15} />
-                Как подключить Яндекс Object Storage
-              </div>
-              <ol className="space-y-2.5 text-xs text-muted-foreground list-none">
-                <li className="flex gap-2.5">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gold/20 text-gold flex items-center justify-center text-[10px] font-bold">1</span>
-                  <span>Войдите в <span className="text-foreground font-medium">console.yandex.cloud</span> → выберите каталог → раздел <span className="text-foreground font-medium">Object Storage</span></span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gold/20 text-gold flex items-center justify-center text-[10px] font-bold">2</span>
-                  <span>Нажмите <span className="text-foreground font-medium">«Создать бакет»</span> → задайте имя (латиницей, например <span className="font-mono text-gold/80">moy-buhuchet</span>) → доступ <span className="text-foreground font-medium">«Публичный»</span> → Создать</span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gold/20 text-gold flex items-center justify-center text-[10px] font-bold">3</span>
-                  <span>Перейдите в <span className="text-foreground font-medium">Сервисные аккаунты</span> → создайте аккаунт с ролью <span className="text-foreground font-medium">storage.editor</span></span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gold/20 text-gold flex items-center justify-center text-[10px] font-bold">4</span>
-                  <span>На странице сервисного аккаунта нажмите <span className="text-foreground font-medium">«Создать новый ключ»</span> → <span className="text-foreground font-medium">«Статический ключ доступа»</span> → скопируйте <span className="text-gold/80 font-mono">Access Key ID</span> и <span className="text-gold/80 font-mono">Secret Access Key</span> — они показываются один раз!</span>
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="flex-shrink-0 w-5 h-5 rounded-full bg-gold/20 text-gold flex items-center justify-center text-[10px] font-bold">5</span>
-                  <span>Вставьте ключи в поля ниже. В поле <span className="text-foreground font-medium">Endpoint URL</span> должно быть: <span className="font-mono text-gold/90 select-all">https://storage.yandexcloud.net</span> — не меняйте. Нажмите <span className="text-foreground font-medium">«Сохранить»</span>, затем <span className="text-foreground font-medium">«Проверить связь»</span></span>
-                </li>
-              </ol>
-            </div>
+            
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>

@@ -48,6 +48,45 @@ def get_conn():
     return psycopg2.connect(os.environ["DATABASE_URL"])
 
 
+def ensure_schema_and_table():
+    """Создаёт схему и таблицу ai_settings, если их нет, и добавляет недостающие колонки."""
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        # Создаём схему, если её нет
+        cur.execute(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}")
+        # Создаём таблицу ai_settings, если её нет (как в миграции V0001)
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {SCHEMA}.ai_settings (
+                id INT PRIMARY KEY DEFAULT 1,
+                selected_model VARCHAR(128) NOT NULL DEFAULT 'deepseek-chat',
+                max_tokens INT NOT NULL DEFAULT 4096,
+                temperature NUMERIC(3,2) NOT NULL DEFAULT 0.30,
+                system_prompt TEXT NOT NULL DEFAULT 'Ты финансовый ИИ-ассистент для B2B компании. Отвечай профессионально, кратко и по делу. Форматируй суммы в рублях.',
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+        # Добавляем недостающие колонки (безопасно)
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS api_key TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS gemini_api_key TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS yandex_api_key TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS yandex_folder_id TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS proxyapi_key TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS vision_provider VARCHAR(64) NOT NULL DEFAULT 'proxyapi-gpt-4o'")
+        # Вставляем дефолтную строку, если таблица пуста
+        cur.execute(f"""
+            INSERT INTO {SCHEMA}.ai_settings (id)
+            SELECT 1
+            WHERE NOT EXISTS (SELECT 1 FROM {SCHEMA}.ai_settings WHERE id = 1)
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        # Логируем, но не прерываем — ошибка будет видна в основном запросе
+        print(f"ensure_schema_and_table warning: {e}")
+
+
 def resp(status, body):
     return {"statusCode": status, "headers": CORS, "body": json.dumps(body, ensure_ascii=False, default=str)}
 
@@ -169,6 +208,9 @@ def handler(event: dict, context) -> dict:
     qs = event.get("queryStringParameters") or {}
     conn = get_conn()
     cur = conn.cursor()
+
+        # Убеждаемся, что таблица существует
+    ensure_schema_and_table()
 
     try:
         if method == "GET" and qs.get("action") == "test":

@@ -1,4 +1,7 @@
 
+-- Создание схемы, если её нет
+CREATE SCHEMA IF NOT EXISTS t_p79040548_accounting_automatio;
+
 -- Transactions table
 CREATE TABLE t_p79040548_accounting_automatio.transactions (
     id SERIAL PRIMARY KEY,

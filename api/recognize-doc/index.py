@@ -717,11 +717,48 @@ def preprocess(b64: str) -> tuple:
 
 # ── Handler ───────────────────────────────────────────────────────────────
 
+def ensure_schema_and_table():
+    """Создаёт схему и таблицу ai_settings, если их нет (дублирует логику для автономности)."""
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"CREATE SCHEMA IF NOT EXISTS {SCHEMA}")
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {SCHEMA}.ai_settings (
+                id INT PRIMARY KEY DEFAULT 1,
+                selected_model VARCHAR(128) NOT NULL DEFAULT 'deepseek-chat',
+                max_tokens INT NOT NULL DEFAULT 4096,
+                temperature NUMERIC(3,2) NOT NULL DEFAULT 0.30,
+                system_prompt TEXT NOT NULL DEFAULT '',
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS api_key TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS gemini_api_key TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS yandex_api_key TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS yandex_folder_id TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS proxyapi_key TEXT NOT NULL DEFAULT ''")
+        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS vision_provider VARCHAR(64) NOT NULL DEFAULT 'proxyapi-gpt-4o'")
+        cur.execute(f"""
+            INSERT INTO {SCHEMA}.ai_settings (id)
+            SELECT 1
+            WHERE NOT EXISTS (SELECT 1 FROM {SCHEMA}.ai_settings WHERE id = 1)
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception:
+        pass
+
+
 def handler(event: dict, context) -> dict:
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
     if event.get("httpMethod") != "POST":
         return {"statusCode": 405, "headers": CORS, "body": json.dumps({"error": "Method not allowed"})}
+
+    # Убеждаемся, что таблица ai_settings существует
+    ensure_schema_and_table()
 
     conn = get_conn()
     try:
