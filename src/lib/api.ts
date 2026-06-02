@@ -1,15 +1,15 @@
 const URLS = {
-  imgProxy: "http://89.108.88.207:8000/api/img-proxy",
-  transactions: "http://89.108.88.207:8000/api/transactions",
-  documents: "http://89.108.88.207:8000/api/documents",
-  taxReports: "http://89.108.88.207:8000/api/tax-reports",
-  aiSettings: "http://89.108.88.207:8000/api/ai-settings",
-  aiChat: "http://89.108.88.207:8000/api/ai-chat",
-  recognizeDoc: "http://89.108.88.207:8000/api/recognize-doc",
-  s3Settings: "http://89.108.88.207:8000/api/s3-settings",
-  uploadDoc: "http://89.108.88.207:8000/api/upload-doc",
-  generatePdf: "http://89.108.88.207:8000/api/generate-pdf",
-  docsPdf: "http://89.108.88.207:8000/api/docs-pdf",
+  imgProxy: "/api/img-proxy",
+  transactions: "/api/transactions",
+  documents: "/api/documents",
+  taxReports: "/api/tax-reports",
+  aiSettings: "/api/ai-settings",
+  aiChat: "/api/ai-chat",
+  recognizeDoc: "/api/recognize-doc",
+  s3Settings: "/api/s3-settings",
+  uploadDoc: "/api/upload-doc",
+  generatePdf: "/api/generate-pdf",
+  docsPdf: "/api/docs-pdf",
 };
 
 /** Оборачивает URL из Яндекс S3 в прокси для обхода CORS */
@@ -211,43 +211,43 @@ export const api = {
 
   // ─── Fix S3 ACL (public-read for all docs) ──────────────
   fixS3Acl: (): Promise<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }> =>
-    request<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }>("http://89.108.88.207:8000/api/fix-s3-acl", { method: "POST" }),
+    request<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }>("/api/fix-s3-acl", { method: "POST" }),
 
     // ─── Database Settings ─────────────────────────
     dbSettings: {
       get: () =>
-        request<DbSettingsStatus>("http://89.108.88.207:8000/api/db-settings"),
+        request<DbSettingsStatus>("/api/db-settings"),
 
       install: () =>
         request<{ ok: boolean; steps?: string[]; error?: string; database_url_masked?: string }>(
-          "http://89.108.88.207:8000/api/db-settings",
+          "/api/db-settings",
           { method: "POST", body: JSON.stringify({ action: "install" }) }
         ),
 
       configure: (database_url: string) =>
         request<{ ok: boolean; message?: string; error?: string }>(
-          "http://89.108.88.207:8000/api/db-settings",
+          "/api/db-settings",
           { method: "POST", body: JSON.stringify({ action: "configure", database_url }) }
         ),
 
       migrate: () =>
         request<{ ok: boolean; applied?: number; total?: number; errors?: string[]; error?: string }>(
-          "http://89.108.88.207:8000/api/db-settings",
+          "/api/db-settings",
           { method: "POST", body: JSON.stringify({ action: "migrate" }) }
         ),
 
       test: () =>
         request<{ ok: boolean; message?: string; error?: string }>(
-          "http://89.108.88.207:8000/api/db-settings",
+          "/api/db-settings",
           { method: "POST", body: JSON.stringify({ action: "test" }) }
         ),
     },
 
   // ─── Categories (статьи затрат) ─────────────────────────
   categories: {
-    list: () => request<{ categories: { name: string; is_default: boolean }[] }>("http://89.108.88.207:8000/api/categories"),
-    add: (name: string) => request<{ ok: boolean; name: string }>("http://89.108.88.207:8000/api/categories", { method: "POST", body: JSON.stringify({ name }) }),
-    remove: (name: string) => request<{ ok: boolean }>(`http://89.108.88.207:8000/api/categories?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
+    list: () => request<{ categories: { name: string; is_default: boolean }[] }>("/api/categories"),
+    add: (name: string) => request<{ ok: boolean; name: string }>("/api/categories", { method: "POST", body: JSON.stringify({ name }) }),
+    remove: (name: string) => request<{ ok: boolean }>(`/api/categories?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
   },
 
   // ─── Upload document to S3 ──────────────────────────────
