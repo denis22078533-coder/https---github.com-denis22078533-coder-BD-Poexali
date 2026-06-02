@@ -249,12 +249,9 @@ def handler(event: dict, context) -> dict:
             if not database_url:
                 return resp(400, {"ok": False, "error": "database_url не может быть пустым"})
             try:
-                # Сохраняем URL в db_config.json
-                config_file = os.path.join(API_DIR, "db_config.json")
-                config = {"database_url": database_url}
-                with open(config_file, "w") as f:
-                    json.dump(config, f, indent=2)
-                # Также обновляем os.environ
+                # Сохраняем URL через db_config (в БД, а если не получится — в JSON-файл)
+                save_config({"database_url": database_url})
+                # Принудительно обновляем os.environ для текущего запроса
                 os.environ["DATABASE_URL"] = database_url
                 return resp(200, {"ok": True, "message": "DATABASE_URL сохранён"})
             except Exception as e:
