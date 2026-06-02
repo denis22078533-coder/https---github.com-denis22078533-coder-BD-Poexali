@@ -266,7 +266,9 @@ def handler(event: dict, context) -> dict:
 
         if ids_param:
             id_list = [int(x.strip()) for x in ids_param.split(",") if x.strip().isdigit()]
-            if not id_list:
+
+
+                        if not id_list:
                 return resp(400, {"error": "Некорректные ids"})
             placeholders = ",".join(["%s"] * len(id_list))
             cur.execute(f"""
@@ -289,7 +291,7 @@ def handler(event: dict, context) -> dict:
         cur.close()
         conn.close()
 
-        if not docs:
+    if not docs:
         return resp(200, {"ok": False, "error": "Нет документов для генерации PDF"})
 
     if not yc:
