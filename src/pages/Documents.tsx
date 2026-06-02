@@ -12,6 +12,7 @@ import DocList from "@/components/documents/DocList";
 import DocDetail from "@/components/documents/DocDetail";
 import { MergeDialog, DeleteDialog, TxModal, MultiModal, ManualDocModal } from "@/components/documents/DocModals";
 import type { ManualDocForm } from "@/components/documents/DocModals";
+import DatePromptDialog from "@/components/documents/DatePromptDialog";
 
 // ── localStorage preview helpers ─────────────────────────────
 const savePreviewSmall = async (docId: number, dataUrl: string) => {
@@ -85,6 +86,13 @@ export default function Documents() {
   const [showManualModal, setShowManualModal] = useState(false);
   const [manualSaving, setManualSaving] = useState(false);
 
+  // ── Диалог ручного ввода даты (когда ИИ не распознал) ──
+  const [showDatePrompt, setShowDatePrompt] = useState(false);
+  const [pendingDateDocId, setPendingDateDocId] = useState<number | null>(null);
+  const [pendingDateFile, setPendingDateFile] = useState<File | null>(null);
+  const [pendingDatePreviewUrl, setPendingDatePreviewUrl] = useState<string | undefined>();
+  const [pendingDateAlreadyUrl, setPendingDateAlreadyUrl] = useState<string | undefined>();
+
   // ── Load ─────────────────────────────────────────────────
   const loadDocs = async () => {
     try {
@@ -135,10 +143,20 @@ export default function Documents() {
         return;
       }
       if (!result.error) {
+        // Если ИИ не распознал дату — показываем диалог для ручного ввода
+        if (!result.date) {
+          // Сохраняем контекст и показываем диалог
+          setPendingDateDocId(docId);
+          setPendingDateFile(file);
+          setPendingDatePreviewUrl(previewUrl);
+          setPendingDateAlreadyUrl(alreadyUploadedUrl);
+          setShowDatePrompt(true);
+          return; // Функция завершится, а сохранение продолжится в колбэке
+        }
         await api.documents.update(docId, {
           status: "done", rec_type: result.doc_type,
           rec_amount: result.amount_str || (result.amount ? `₽ ${result.amount}` : undefined),
-          rec_date: result.date || undefined, rec_counterparty: result.counterparty || undefined, rec_inn: result.inn || undefined,
+          rec_date: result.date, rec_counterparty: result.counterparty || undefined, rec_inn: result.inn || undefined,
         });
       } else {
         await api.documents.update(docId, { status: "error" }).catch(() => {});
@@ -151,6 +169,44 @@ export default function Documents() {
       setSelected((prev) => prev?.id === docId ? { ...prev, ...finalDoc } : prev);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Ошибка распознавания";
+      await api.documents.update(docId, { status: "error" }).catch(() => {});
+      setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, status: "error", recognizing: false, recognitionError: msg } : d));
+      setSelected((prev) => prev?.id === docId ? { ...prev, status: "error", recognizing: false, recognitionError: msg } : prev);
+    }
+  };
+
+  // ── Продолжение сохранения после ручного ввода даты ───────
+  // userDate может быть undefined, если пользователь нажал «Пропустить»
+  const completeRecognitionWithDate = async (docId: number, userDate: string | undefined, file: File, previewUrl?: string, alreadyUploadedUrl?: string) => {
+    try {
+      let result;
+      // Повторно распознавать не нужно — результат уже есть в selected/recognition,
+      // но мы его не сохранили. Загружаем свежий список, чтобы получить recognition из БД,
+      // либо повторяем распознавание. Проще всего — повторно вызвать recognizeDoc без даты,
+      // а дату передать в update вручную.
+      if (isImage(file.name)) {
+        const compressed = await compressImageToBase64(file, 1600, 0.65, false);
+        result = await api.recognizeDoc({ image_b64: compressed.b64, mime_type: compressed.mime, file_name: file.name, doc_id: docId, auto_create_tx: true });
+      } else if (isExcel(file.name)) {
+        const b64 = await fileToBase64(file);
+        result = await api.recognizeDoc({ excel_b64: b64, file_name: file.name, doc_id: docId, auto_create_tx: true });
+      } else {
+        result = await api.recognizeDoc({ file_name: file.name, doc_id: docId, auto_create_tx: true });
+      }
+      // Используем введённую пользователем дату вместо той, что вернул ИИ
+      await api.documents.update(docId, {
+        status: "done", rec_type: result.doc_type,
+        rec_amount: result.amount_str || (result.amount ? `₽ ${result.amount}` : undefined),
+        rec_date: userDate, rec_counterparty: result.counterparty || undefined, rec_inn: result.inn || undefined,
+      });
+      const updated = await api.documents.list();
+      const updatedDoc = updated.documents.find((d) => d.id === docId);
+      if (previewUrl) savePreview(docId, previewUrl);
+      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl, status: "done" };
+      setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, ...finalDoc } : d));
+      setSelected((prev) => prev?.id === docId ? { ...prev, ...finalDoc } : prev);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Ошибка сохранения даты";
       await api.documents.update(docId, { status: "error" }).catch(() => {});
       setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, status: "error", recognizing: false, recognitionError: msg } : d));
       setSelected((prev) => prev?.id === docId ? { ...prev, status: "error", recognizing: false, recognitionError: msg } : prev);
@@ -498,6 +554,46 @@ export default function Documents() {
     }
   };
 
+  // ── Обработчики диалога ввода даты ────────────────────────
+  const handleDateConfirm = (date: string) => {
+    setShowDatePrompt(false);
+    const docId = pendingDateDocId;
+    const file = pendingDateFile;
+    const previewUrl = pendingDatePreviewUrl;
+    const alreadyUrl = pendingDateAlreadyUrl;
+    setPendingDateDocId(null);
+    setPendingDateFile(null);
+    setPendingDatePreviewUrl(undefined);
+    setPendingDateAlreadyUrl(undefined);
+    if (docId !== null && file !== null) {
+      completeRecognitionWithDate(docId, date, file, previewUrl, alreadyUrl);
+    }
+  };
+
+  const handleDateSkip = () => {
+    setShowDatePrompt(false);
+    // Сохраняем документ без даты (передаём undefined)
+    const docId = pendingDateDocId;
+    const file = pendingDateFile;
+    const previewUrl = pendingDatePreviewUrl;
+    const alreadyUrl = pendingDateAlreadyUrl;
+    setPendingDateDocId(null);
+    setPendingDateFile(null);
+    setPendingDatePreviewUrl(undefined);
+    setPendingDateAlreadyUrl(undefined);
+    if (docId !== null && file !== null) {
+      completeRecognitionWithDate(docId, undefined as unknown as string, file, previewUrl, alreadyUrl);
+    }
+  };
+
+  const handleDateClose = () => {
+    // При закрытии без выбора — считаем как пропуск
+    handleDateSkip();
+  };
+
+  // Получаем имя файла для контекста в диалоге
+  const pendingDocName = pendingDateFile?.name || "документ";
+
   const selDone = selected?.status === "done" && !selected.recognizing;
 
   return (
@@ -696,6 +792,15 @@ export default function Documents() {
         customCategories={customCategories}
         onClose={() => setShowManualModal(false)}
         onSave={handleManualDoc}
+      />
+
+      {/* ── Диалог ввода даты, если ИИ не распознал ── */}
+      <DatePromptDialog
+        open={showDatePrompt}
+        docName={pendingDocName}
+        onConfirm={handleDateConfirm}
+        onSkip={handleDateSkip}
+        onClose={handleDateClose}
       />
     </div>
   );

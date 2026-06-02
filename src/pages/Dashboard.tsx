@@ -4,7 +4,7 @@ import { api, fmt, type DashboardSummary } from "@/lib/api";
 
 const BANNERS = [
   {
-    img: "https://images.unsplash.com/photo-1502685104227-e0b2615c1e16", // Обновлено изображение
+    img: "https://images.unsplash.com/photo-1587614382346-ac4696d0cf12?auto=format&fit=crop&w=1200&q=80", // Обновлено: улыбающаяся девушка за ноутбуком
     tag: "Butsky Group",
     title: "Команда профессионалов\nна страже вашего учёта",
     sub: "Интеллектуальная автоматизация учёта, созданная экспертом",
