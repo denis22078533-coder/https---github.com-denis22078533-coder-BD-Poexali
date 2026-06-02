@@ -263,15 +263,21 @@ export default function AiChat() {
             <button
               onClick={toggleRecording}
               title={recording ? "Остановить запись" : "Голосовой ввод"}
-              className={`w-10 h-10 rounded-lg flex items-center justify-center
+              className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${
+                recording
+                  ? "bg-red-500 text-white animate-pulse"
+                  : "bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-gold/40"
+              }`}
+            >
+              <Icon name={recording ? "MicOff" : "Mic"} size={16} />
             </button>
           )}
           <button
             onClick={() => send(input)}
             disabled={!input.trim() || loading}
-            className="w-11 h-11 sm:w-10 sm:h-10 rounded-lg bg-gold flex items-center justify-center text-primary-foreground hover:bg-yellow-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            className="w-10 h-10 rounded-lg bg-gold flex items-center justify-center text-primary-foreground hover:bg-yellow-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
           >
-            <Icon name="Send" size={17} />
+            <Icon name="Send" size={16} />
           </button>
         </div>
       </div>
