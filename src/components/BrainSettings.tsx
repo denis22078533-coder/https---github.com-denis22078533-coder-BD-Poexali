@@ -52,18 +52,7 @@ const tiles: TileDef[] = [
       { key: "timeout", label: "Таймаут (сек)", placeholder: "30" },
     ],
   },
-  {
-    id: "secrets",
-    title: "Секреты",
-    desc: "Ключи ProxyAPI и ИИ",
-    icon: "KeyRound",
-    color: "text-amber-400 border-amber-900/40",
-    fields: [
-      { key: "proxyapiKey", label: "ProxyAPI ключ", placeholder: "sk-...", type: "password" },
-      { key: "openaiKey", label: "OpenAI ключ (прямой)", placeholder: "sk-...", type: "password" },
-      { key: "deepseekKey", label: "DeepSeek ключ", placeholder: "sk-...", type: "password" },
-    ],
-  },
+
   {
     id: "storage",
     title: "Хранилище",
@@ -157,54 +146,29 @@ export default function BrainSettings() {
   /* состояние для каждой плитки */
   const [dbData, setDbData] = useState<Record<string, string>>({});
   const [fnData, setFnData] = useState<Record<string, string>>({});
-  const [secData, setSecData] = useState<Record<string, string>>({});
+
   const [stData, setStData] = useState<Record<string, string>>({});
 
   const allData: Record<string, Record<string, string>> = {
     database: dbData,
     functions: fnData,
-    secrets: secData,
+
     storage: stData,
   };
 
   const setters: Record<string, React.Dispatch<React.SetStateAction<Record<string, string>>>> = {
     database: setDbData,
     functions: setFnData,
-    secrets: setSecData,
+
     storage: setStData,
   };
 
   const [activeTile, setActiveTile] = useState<string | null>(null);
-  const [savingSecrets, setSavingSecrets] = useState(false);
   const [savingStorage, setSavingStorage] = useState(false);
 
   const handleChange = (key: string, val: string) => {
     if (!activeTile) return;
     setters[activeTile]?.((prev) => ({ ...prev, [key]: val }));
-  };
-
-  /* ── сохранение Секретов → api.aiSettings.update ────────── */
-  const handleSaveSecrets = async () => {
-    setSavingSecrets(true);
-    try {
-      const payload: Record<string, string> = {};
-      if (secData.proxyapiKey?.trim()) payload.proxyapi_key = secData.proxyapiKey.trim();
-      if (secData.deepseekKey?.trim()) payload.api_key = secData.deepseekKey.trim();
-      else if (secData.openaiKey?.trim()) payload.api_key = secData.openaiKey.trim();
-
-      if (Object.keys(payload).length === 0) {
-        alert("Нет данных для сохранения. Заполните хотя бы одно поле.");
-        return;
-      }
-
-      await api.aiSettings.update(payload);
-      alert("Настройки сохранены в БД!");
-    } catch (e) {
-      console.error("Ошибка сохранения секретов:", e);
-      alert("Ошибка: " + (e instanceof Error ? e.message : "Неизвестная ошибка"));
-    } finally {
-      setSavingSecrets(false);
-    }
   };
 
   /* ── сохранение Хранилища → api.s3Settings.update ──────── */
@@ -314,16 +278,12 @@ export default function BrainSettings() {
             if (!v) setActiveTile(null);
           }}
           onSave={
-            tile.id === "secrets"
-              ? handleSaveSecrets
-              : tile.id === "storage"
+            tile.id === "storage"
               ? handleSaveStorage
               : undefined
           }
           saving={
-            tile.id === "secrets"
-              ? savingSecrets
-              : tile.id === "storage"
+            tile.id === "storage"
               ? savingStorage
               : undefined
           }

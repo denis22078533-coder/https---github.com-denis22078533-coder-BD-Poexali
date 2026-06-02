@@ -35,9 +35,12 @@ export default function AdminSettings() {
     api_key_masked: "",
     vision_provider: "proxyapi-gpt-4o",
   });
-  const [apiKeyInput, setApiKeyInput] = useState("");
+    const [apiKeyInput, setApiKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [editKey, setEditKey] = useState(false);
+  const [proxyapiKeyInput, setProxyapiKeyInput] = useState("");
+  const [showProxyapiKey, setShowProxyapiKey] = useState(false);
+  const [editProxyapiKey, setEditProxyapiKey] = useState(false);
   const [yandexKeyInput, setYandexKeyInput] = useState("");
   const [yandexFolderInput, setYandexFolderInput] = useState("");
   const [showYandexKey, setShowYandexKey] = useState(false);
@@ -140,8 +143,11 @@ export default function AdminSettings() {
         system_prompt: settings.system_prompt,
         vision_provider: settings.vision_provider || "proxyapi-gpt-4o",
       };
-      if (apiKeyInput.trim()) {
+            if (apiKeyInput.trim()) {
         payload.api_key = apiKeyInput.trim();
+      }
+      if (proxyapiKeyInput.trim()) {
+        payload.proxyapi_key = proxyapiKeyInput.trim();
       }
       if (yandexKeyInput.trim()) {
         payload.yandex_api_key = yandexKeyInput.trim();
@@ -153,6 +159,7 @@ export default function AdminSettings() {
       const res = await api.aiSettings.update(payload);
       setSettings(res.settings);
       if (apiKeyInput.trim()) { setApiKeyInput(""); setEditKey(false); }
+      if (proxyapiKeyInput.trim()) { setProxyapiKeyInput(""); setEditProxyapiKey(false); }
       if (yandexKeyInput.trim()) { setYandexKeyInput(""); setEditYandexKey(false); }
       if (yandexFolderInput.trim()) setYandexFolderInput("");
 
@@ -382,7 +389,7 @@ export default function AdminSettings() {
 
           
 
-          {/* Vision провайдер — для распознавания документов */}
+                    {/* Vision провайдер — для распознавания документов */}
           <div className="rounded-lg border border-purple-900/30 bg-purple-900/10 p-3 sm:p-3.5 space-y-2.5">
             <div className="flex items-start gap-2 flex-wrap">
               <Icon name="Eye" size={15} className="text-purple-400 flex-shrink-0 mt-0.5" />
@@ -404,6 +411,67 @@ export default function AdminSettings() {
             </select>
             <div className="text-xs text-muted-foreground">
               {visionProviders.find(v => v.id === (settings.vision_provider || "proxyapi-gpt-4o"))?.desc}
+            </div>
+
+            {/* ProxyAPI ключ — обязателен для всех ProxyAPI Vision-провайдеров */}
+            <div className="rounded-lg border border-amber-900/30 bg-amber-900/10 p-3 space-y-2">
+              <div className="flex items-start gap-2 flex-wrap">
+                <Icon name="KeyRound" size={15} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-amber-300">ProxyAPI ключ</div>
+                  <div className="text-xs text-muted-foreground">Ключ для всех Vision-моделей через ProxyAPI (GPT-4o, Claude, Gemini)</div>
+                </div>
+                {settings.proxyapi_key_set && !editProxyapiKey && (
+                  <span className="flex items-center gap-1 text-xs text-positive flex-shrink-0">
+                    <Icon name="CheckCircle" size={11} /> Ключ сохранён
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                {settings.proxyapi_key_set && !editProxyapiKey ? (
+                  <div className="relative flex items-center w-full bg-secondary border border-border rounded px-3 sm:px-4 py-2.5 pr-16 sm:pr-20">
+                    <span className="text-xs sm:text-sm font-mono-fin text-foreground flex-1 truncate">
+                      {showProxyapiKey ? settings.proxyapi_key_masked : "sk-" + "●".repeat(16) + settings.proxyapi_key_masked?.slice(-4)}
+                    </span>
+                    <div className="absolute right-1.5 flex items-center gap-0.5">
+                      <button type="button" onClick={() => setShowProxyapiKey(v => !v)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                        <Icon name={showProxyapiKey ? "EyeOff" : "Eye"} size={15} />
+                      </button>
+                      <button type="button" onClick={() => { setEditProxyapiKey(true); setShowProxyapiKey(false); }} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-amber-400 transition-colors" title="Заменить ключ">
+                        <Icon name="Pencil" size={13} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      autoFocus={editProxyapiKey}
+                      type={showProxyapiKey ? "text" : "password"}
+                      value={proxyapiKeyInput}
+                      onChange={(e) => setProxyapiKeyInput(e.target.value)}
+                      placeholder="sk-... (ключ от ProxyAPI)"
+                      className="w-full bg-secondary border border-amber-500/50 rounded px-3 sm:px-4 py-2.5 text-sm font-mono-fin text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-amber-500 pr-16"
+                    />
+                    <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                      <button type="button" onClick={() => setShowProxyapiKey(v => !v)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                        <Icon name={showProxyapiKey ? "EyeOff" : "Eye"} size={15} />
+                      </button>
+                      {editProxyapiKey && (
+                        <button type="button" onClick={() => { setEditProxyapiKey(false); setProxyapiKeyInput(""); }} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                          <Icon name="X" size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {settings.proxyapi_key_set && !editProxyapiKey ? "Нажмите карандаш чтобы заменить ключ" : "Ключ сохраняется на сервере, не в браузере"}
+              </div>
+              <a href="https://proxyapi.ru/docs" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 transition-colors">
+                <Icon name="ExternalLink" size={12} /> Получить ключ на proxyapi.ru
+              </a>
             </div>
           </div>
 
