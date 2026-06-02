@@ -80,7 +80,7 @@ export default function AiChat() {
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [model, setModel] = useState("deepseek-chat");
+  const model = "deepseek-chat";
   const [recording, setRecording] = useState(false);
   const [speechSupported] = useState(
     () => typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
@@ -109,7 +109,7 @@ export default function AiChat() {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newHistory, model }),
+        body: JSON.stringify({ messages: newHistory, model: "deepseek-chat" }),
       });
 
       const data = await resp.json();
@@ -193,14 +193,10 @@ export default function AiChat() {
           </div>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-          <select
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-            className="text-xs bg-secondary border border-border rounded px-2 py-1.5 text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gold max-w-[110px] sm:max-w-none"
-          >
-            <option value="deepseek-chat">DeepSeek V3</option>
-            <option value="deepseek-reasoner">DeepSeek R1</option>
-          </select>
+          <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-muted-foreground bg-secondary border border-border rounded">
+            <Icon name="Brain" size={13} className="text-gold" />
+            DeepSeek V3
+          </div>
           <button
             onClick={handleReset}
             title="Новый диалог"

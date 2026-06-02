@@ -18,16 +18,8 @@ CORS = {
     "Content-Type": "application/json",
 }
 
-# Прямые эндпоинты (если у пользователя свой ключ напрямую к провайдеру)
-DIRECT_ENDPOINTS = {
-    "deepseek-chat": "https://api.deepseek.com/v1/chat/completions",
-    "deepseek-reasoner": "https://api.deepseek.com/v1/chat/completions",
-    "gpt-4o": "https://api.openai.com/v1/chat/completions",
-    "gpt-4o-mini": "https://api.openai.com/v1/chat/completions",
-    "gpt-4-turbo": "https://api.openai.com/v1/chat/completions",
-    "claude-3-5-sonnet": "https://api.anthropic.com/v1/messages",
-    "gemini-pro": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent",
-}
+# DeepSeek — единственная модель для чата
+DEEPSEEK_ENDPOINT = "https://api.deepseek.com/v1/chat/completions"
 
 # ProxyAPI: один ключ, все провайдеры. Модель имеет префикс proxyapi-
 PROXYAPI_BASE = "https://api.proxyapi.ru"
@@ -68,6 +60,31 @@ def mask_key(key: str) -> str:
     return key[:4] + "●" * (len(key) - 8) + key[-4:]
 
 
+def test_deepseek(api_key: str) -> dict:
+    """Проверка прямого ключа DeepSeek."""
+    if not api_key:
+        return {"ok": False, "error": "API ключ DeepSeek не задан"}
+    payload = {"model": "deepseek-chat", "messages": [{"role": "user", "content": "ping"}], "max_tokens": 5}
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    try:
+        req = urllib.request.Request(
+            DEEPSEEK_ENDPOINT, data=json.dumps(payload).encode("utf-8"),
+            headers=headers, method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return {"ok": True, "status": r.status}
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        try:
+            err_data = json.loads(body)
+            msg = err_data.get("error", {}).get("message") or err_data.get("error") or body[:200]
+        except Exception:
+            msg = body[:200]
+        return {"ok": False, "error": f"HTTP {e.code}: {msg}"}
+    except Exception as ex:
+        return {"ok": False, "error": str(ex)}
+
+
 def test_proxyapi(model: str, proxyapi_key: str) -> dict:
     """Проверка ключа ProxyAPI на выбранной модели."""
     if not proxyapi_key:
@@ -99,41 +116,6 @@ def test_proxyapi(model: str, proxyapi_key: str) -> dict:
             msg = err_data.get("error", {}).get("message") if isinstance(err_data.get("error"), dict) else err_data.get("error") or err_data.get("message") or body[:300]
         except Exception:
             msg = body[:300]
-        return {"ok": False, "error": f"HTTP {e.code}: {msg}"}
-    except Exception as ex:
-        return {"ok": False, "error": str(ex)}
-
-
-def test_direct(model: str, api_key: str) -> dict:
-    """Старая проверка для прямых ключей (DeepSeek, OpenAI и т.д.)."""
-    url = DIRECT_ENDPOINTS.get(model)
-    if not url:
-        return {"ok": False, "error": f"Модель {model} не поддерживается"}
-    if not api_key:
-        return {"ok": False, "error": "API ключ не задан"}
-
-    if model.startswith("deepseek") or model.startswith("gpt"):
-        payload = {"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 5}
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
-    elif model.startswith("claude"):
-        payload = {"model": "claude-3-5-sonnet-20241022", "max_tokens": 5, "messages": [{"role": "user", "content": "ping"}]}
-        headers = {"Content-Type": "application/json", "x-api-key": api_key, "anthropic-version": "2023-06-01"}
-    else:
-        url = url + f"?key={api_key}"
-        payload = {"contents": [{"parts": [{"text": "ping"}]}]}
-        headers = {"Content-Type": "application/json"}
-
-    try:
-        req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=15) as r:
-            return {"ok": True, "status": r.status}
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace")
-        try:
-            err_data = json.loads(body)
-            msg = err_data.get("error", {}).get("message") or err_data.get("error") or body[:200]
-        except Exception:
-            msg = body[:200]
         return {"ok": False, "error": f"HTTP {e.code}: {msg}"}
     except Exception as ex:
         return {"ok": False, "error": str(ex)}
@@ -196,7 +178,7 @@ def handler(event: dict, context) -> dict:
                 FROM {SCHEMA}.ai_settings WHERE id = 1
             """)
             row = cur.fetchone()
-            if not row:
+                        if not row:
                 return resp(404, {"ok": False, "error": "Настройки не найдены"})
             model = row[0]
             deepseek_key = row[1] or os.environ.get("DEEPSEEK_API_KEY", "")
@@ -206,13 +188,11 @@ def handler(event: dict, context) -> dict:
             proxyapi_key = row[5] or os.environ.get("PROXYAPI_KEY", "")
             vision_provider = row[6] or "proxyapi-gpt-4o"
 
-            # ИИ-чат
-            if model.startswith("proxyapi-"):
-                ai_result = test_proxyapi(model, proxyapi_key)
-            elif model.startswith("gemini"):
-                ai_result = test_direct(model, gemini_key)
+            # ИИ-чат — только DeepSeek
+            if model.startswith("deepseek"):
+                ai_result = test_deepseek(deepseek_key)
             else:
-                ai_result = test_direct(model, deepseek_key)
+                ai_result = {"ok": False, "error": f"Модель {model} не поддерживается для чата"}
 
             # Vision (распознавание документов)
             if vision_provider.startswith("proxyapi-"):
@@ -221,7 +201,7 @@ def handler(event: dict, context) -> dict:
                 vision_result = test_yandex(yandex_key, yandex_folder)
             elif vision_provider == "gemini":
                 if gemini_key:
-                    vision_result = test_direct("gemini-pro", gemini_key)
+                    vision_result = {"ok": None, "error": "Gemini больше не поддерживается для чата"}
                 else:
                     vision_result = {"ok": None, "error": "Ключ Gemini не задан"}
             else:

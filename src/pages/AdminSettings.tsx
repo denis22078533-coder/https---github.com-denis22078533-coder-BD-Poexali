@@ -5,30 +5,15 @@ import BrainSettings from "@/components/BrainSettings";
 import { api, type AiSettings, type S3Settings, type DbSettingsStatus } from "@/lib/api";
 
 const models = [
-  { id: "proxyapi-gpt-4o", name: "GPT-4o (ProxyAPI)", provider: "ProxyAPI", desc: "Лучшая модель OpenAI для русских документов", recommended: true },
-  { id: "proxyapi-gpt-4o-mini", name: "GPT-4o mini (ProxyAPI)", provider: "ProxyAPI", desc: "Дешевле, быстрее, тоже видит фото" },
-  { id: "proxyapi-claude-3-5-sonnet", name: "Claude 3.5 Sonnet (ProxyAPI)", provider: "ProxyAPI", desc: "Отлично для аналитики и таблиц" },
-  { id: "proxyapi-gemini-2.0-flash", name: "Gemini 2.0 Flash (ProxyAPI)", provider: "ProxyAPI", desc: "Очень быстрый, большой контекст" },
-  { id: "proxyapi-gemini-1.5-pro", name: "Gemini 1.5 Pro (ProxyAPI)", provider: "ProxyAPI", desc: "Максимум точности Google" },
-  { id: "proxyapi-claude-3-haiku", name: "Claude 3 Haiku (ProxyAPI)", provider: "ProxyAPI", desc: "Самый быстрый и дешёвый" },
-  { id: "deepseek-chat", name: "DeepSeek V3", provider: "DeepSeek (прямой)", desc: "Доступная цена, прямой ключ" },
-  { id: "deepseek-reasoner", name: "DeepSeek R1", provider: "DeepSeek (прямой)", desc: "Режим рассуждений" },
+  { id: "deepseek-chat", name: "DeepSeek V3", provider: "DeepSeek (прямой ключ)", desc: "Доступная цена, прямой ключ", recommended: true },
 ];
 
 const endpointByModel: Record<string, string> = {
-  "proxyapi-gpt-4o": "https://api.proxyapi.ru/openai/v1",
-  "proxyapi-gpt-4o-mini": "https://api.proxyapi.ru/openai/v1",
-  "proxyapi-claude-3-5-sonnet": "https://api.proxyapi.ru/anthropic/v1",
-  "proxyapi-claude-3-haiku": "https://api.proxyapi.ru/anthropic/v1",
-  "proxyapi-gemini-2.0-flash": "https://api.proxyapi.ru/google/v1beta",
-  "proxyapi-gemini-1.5-pro": "https://api.proxyapi.ru/google/v1beta",
   "deepseek-chat": "https://api.deepseek.com/v1",
-  "deepseek-reasoner": "https://api.deepseek.com/v1",
 };
 
 const providerGroups = [
-  { name: "ProxyAPI — один ключ, все модели", color: "text-gold", ids: ["proxyapi-gpt-4o", "proxyapi-gpt-4o-mini", "proxyapi-claude-3-5-sonnet", "proxyapi-gemini-2.0-flash", "proxyapi-gemini-1.5-pro", "proxyapi-claude-3-haiku"] },
-  { name: "DeepSeek (прямой ключ)", color: "text-blue-400", ids: ["deepseek-chat", "deepseek-reasoner"] },
+  { name: "DeepSeek (прямой ключ)", color: "text-blue-400", ids: ["deepseek-chat"] },
 ];
 
 const visionProviders = [
@@ -42,7 +27,7 @@ const visionProviders = [
 
 export default function AdminSettings() {
   const [settings, setSettings] = useState<AiSettings>({
-    selected_model: "proxyapi-gpt-4o",
+    selected_model: "deepseek-chat",
     max_tokens: 4096,
     temperature: 0.3,
     system_prompt: "Ты финансовый ИИ-ассистент для B2B компании. Отвечай профессионально, кратко и по делу. Форматируй суммы в рублях.",
@@ -57,9 +42,7 @@ export default function AdminSettings() {
   const [yandexFolderInput, setYandexFolderInput] = useState("");
   const [showYandexKey, setShowYandexKey] = useState(false);
   const [editYandexKey, setEditYandexKey] = useState(false);
-  const [proxyapiKeyInput, setProxyapiKeyInput] = useState("");
-  const [showProxyapiKey, setShowProxyapiKey] = useState(false);
-  const [editProxyapiKey, setEditProxyapiKey] = useState(false);
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -166,15 +149,13 @@ export default function AdminSettings() {
       if (yandexFolderInput.trim()) {
         payload.yandex_folder_id = yandexFolderInput.trim();
       }
-      if (proxyapiKeyInput.trim()) {
-        payload.proxyapi_key = proxyapiKeyInput.trim();
-      }
+      
       const res = await api.aiSettings.update(payload);
       setSettings(res.settings);
       if (apiKeyInput.trim()) { setApiKeyInput(""); setEditKey(false); }
       if (yandexKeyInput.trim()) { setYandexKeyInput(""); setEditYandexKey(false); }
       if (yandexFolderInput.trim()) setYandexFolderInput("");
-      if (proxyapiKeyInput.trim()) { setProxyapiKeyInput(""); setEditProxyapiKey(false); }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
@@ -328,13 +309,14 @@ export default function AdminSettings() {
         <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 sm:mb-4 gold-line pl-3">Подключение к API</div>
         <div className="space-y-3">
 
-          {/* API Key field */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5 gap-2 flex-wrap">
-              <label className="text-xs text-muted-foreground min-w-0">
-                API Ключ
-                {currentModel && <span className="ml-2 text-muted-foreground/60 hidden sm:inline">для {currentModel.provider}</span>}
-              </label>
+                    {/* DeepSeek API Key */}
+          <div className="rounded-lg border border-blue-900/30 bg-blue-900/10 p-3 sm:p-3.5 space-y-2.5">
+            <div className="flex items-start gap-2 flex-wrap">
+              <Icon name="KeyRound" size={15} className="text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-blue-300">API Ключ DeepSeek</div>
+                <div className="text-xs text-muted-foreground">Прямой ключ для DeepSeek V3 — чат-модель ИИ</div>
+              </div>
               {settings.api_key_set && !editKey && (
                 <span className="flex items-center gap-1 text-xs text-positive flex-shrink-0">
                   <Icon name="CheckCircle" size={11} /> Ключ сохранён
@@ -351,7 +333,7 @@ export default function AdminSettings() {
                     <button type="button" onClick={() => setShowKey(v => !v)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                       <Icon name={showKey ? "EyeOff" : "Eye"} size={15} />
                     </button>
-                    <button type="button" onClick={() => { setEditKey(true); setShowKey(false); }} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-gold transition-colors" title="Заменить ключ">
+                    <button type="button" onClick={() => { setEditKey(true); setShowKey(false); }} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-blue-400 transition-colors" title="Заменить ключ">
                       <Icon name="Pencil" size={13} />
                     </button>
                   </div>
@@ -363,8 +345,8 @@ export default function AdminSettings() {
                     type={showKey ? "text" : "password"}
                     value={apiKeyInput}
                     onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder="Вставьте API-ключ..."
-                    className="w-full bg-secondary border border-gold/50 rounded px-3 sm:px-4 py-2.5 text-sm font-mono-fin text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold pr-16"
+                    placeholder="sk-... (ключ от DeepSeek)"
+                    className="w-full bg-secondary border border-blue-500/50 rounded px-3 sm:px-4 py-2.5 text-sm font-mono-fin text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-blue-500 pr-16"
                   />
                   <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                     <button type="button" onClick={() => setShowKey(v => !v)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
@@ -379,9 +361,13 @@ export default function AdminSettings() {
                 </>
               )}
             </div>
-            <div className="text-xs text-muted-foreground mt-1.5">
+            <div className="text-xs text-muted-foreground">
               {settings.api_key_set && !editKey ? "Нажмите карандаш чтобы заменить ключ" : "Ключ сохраняется на сервере, не в браузере"}
             </div>
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+              <Icon name="ExternalLink" size={12} /> Получить ключ на platform.deepseek.com
+            </a>
           </div>
 
           {/* Endpoint (read-only info) */}
@@ -394,61 +380,7 @@ export default function AdminSettings() {
             />
           </div>
 
-          {/* ProxyAPI Key — единый ключ для GPT/Claude/Gemini */}
-          <div className="rounded-lg border border-gold/30 bg-gold/5 p-3 sm:p-3.5 space-y-2.5">
-            <div className="flex items-start gap-2 flex-wrap">
-              <Icon name="KeyRound" size={15} className="text-gold flex-shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-medium text-gold">ProxyAPI — один ключ на GPT, Claude и Gemini</div>
-                <div className="text-xs text-muted-foreground">Рекомендуется. Работает из России без VPN, оплата в рублях</div>
-              </div>
-              {settings.proxyapi_key_set && (
-                <span className="flex items-center gap-1 text-xs text-positive whitespace-nowrap flex-shrink-0"><Icon name="CheckCircle" size={11} />Ключ есть</span>
-              )}
-            </div>
-            <div className="relative">
-              {settings.proxyapi_key_set && !editProxyapiKey ? (
-                <div className="relative flex items-center w-full bg-secondary border border-border rounded px-3 sm:px-4 py-2.5 pr-16 sm:pr-20">
-                  <span className="text-xs sm:text-sm font-mono-fin text-foreground flex-1 truncate">
-                    {showProxyapiKey ? settings.proxyapi_key_masked : "sk-" + "●".repeat(16) + (settings.proxyapi_key_masked?.slice(-4) || "")}
-                  </span>
-                  <div className="absolute right-1.5 flex items-center gap-0.5">
-                    <button type="button" onClick={() => setShowProxyapiKey(v => !v)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                      <Icon name={showProxyapiKey ? "EyeOff" : "Eye"} size={15} />
-                    </button>
-                    <button type="button" onClick={() => { setEditProxyapiKey(true); setShowProxyapiKey(false); }} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-gold transition-colors" title="Заменить ключ">
-                      <Icon name="Pencil" size={13} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <input
-                    autoFocus={editProxyapiKey}
-                    type={showProxyapiKey ? "text" : "password"}
-                    value={proxyapiKeyInput}
-                    onChange={(e) => setProxyapiKeyInput(e.target.value)}
-                    placeholder="sk-... (ключ из личного кабинета ProxyAPI)"
-                    className="w-full bg-secondary border border-gold/50 rounded px-3 sm:px-4 py-2.5 text-sm font-mono-fin text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold pr-16"
-                  />
-                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-                    <button type="button" onClick={() => setShowProxyapiKey(v => !v)} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                      <Icon name={showProxyapiKey ? "EyeOff" : "Eye"} size={15} />
-                    </button>
-                    {editProxyapiKey && (
-                      <button type="button" onClick={() => { setEditProxyapiKey(false); setProxyapiKeyInput(""); }} className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                        <Icon name="X" size={14} />
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-            <a href="https://proxyapi.ru/" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-gold hover:text-yellow-300 transition-colors">
-              <Icon name="ExternalLink" size={12} /> Получить ключ на proxyapi.ru
-            </a>
-          </div>
+          
 
           {/* Vision провайдер — для распознавания документов */}
           <div className="rounded-lg border border-purple-900/30 bg-purple-900/10 p-3 sm:p-3.5 space-y-2.5">
