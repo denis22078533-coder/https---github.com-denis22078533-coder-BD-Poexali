@@ -938,14 +938,10 @@ function DatabaseSettings({
     }
   };
 
-  const installed = dbStatus?.installed ?? false;
+    const installed = dbStatus?.installed ?? false;
   const running = dbStatus?.running ?? false;
   const configured = dbStatus?.configured ?? false;
-  const schemaExists = dbStatus?.schema_exists ?? false;
   const connected = dbStatus?.connected ?? false;
-  const tablesExist = (dbStatus?.tables_count ?? 0) > 0;
-  const migrationsApplied = dbStatus?.migrations_applied ?? 0;
-  const migrationsTotal = dbStatus?.migrations_total ?? dbStatus?.migration_files?.length ?? 0;
 
   // Если статус ещё не получен — показываем кнопку для ручной проверки
   if (!dbStatus) {
