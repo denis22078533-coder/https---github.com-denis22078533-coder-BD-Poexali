@@ -1,4 +1,4 @@
-"""
+﻿"""
 Генерация PDF со списком документов и их фотографиями.
 Сохраняет PDF в Яндекс S3 и возвращает URL.
 GET / — все документы (до 40)
@@ -264,8 +264,8 @@ def handler(event: dict, context) -> dict:
     try:
         yc = get_yandex_s3_cfg(conn)
 
-        if ids_param:
-                        id_list = [int(x.strip()) for x in ids_param.split(",") if x.strip().isdigit()]
+                if ids_param:
+            id_list = [int(x.strip()) for x in ids_param.split(",") if x.strip().isdigit()]
             if not id_list:
                 return resp(400, {"error": "Некорректные ids"})
             placeholders = ",".join(["%s"] * len(id_list))
@@ -283,7 +283,7 @@ def handler(event: dict, context) -> dict:
                 ORDER BY created_at DESC
             """)
 
-        cols = ["id", "name", "s3_url", "rec_type", "rec_amount", "rec_date", "rec_counterparty", "created_at"]
+                cols = ["id", "name", "s3_url", "rec_type", "rec_amount", "rec_date", "rec_counterparty", "created_at"]
         docs = [dict(zip(cols, row)) for row in cur.fetchall()]
     finally:
         cur.close()
