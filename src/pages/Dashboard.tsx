@@ -66,7 +66,7 @@ function HeroBanner() {
   const b = BANNERS[current];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl" style={{ height: "220px" }}>
+    <div className="relative w-full overflow-hidden rounded-xl" style={{ height: "clamp(160px, 25vw, 220px)" }}>
       {/* Background image */}
       {b.img ? (
         <div
@@ -147,21 +147,21 @@ function HeroBanner() {
 
       {/* Content — всегда поверх градиента */}
       <div
-        className="absolute inset-0 z-10 flex flex-col justify-end p-5 sm:p-7 transition-opacity duration-300"
+        className="absolute inset-0 z-10 flex flex-col justify-end p-3 sm:p-7 transition-opacity duration-300"
         style={{ opacity: animating ? 0 : 1 }}
       >
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-widest text-[#0284C7] uppercase mb-2">
+        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold tracking-widest text-[#0284C7] uppercase mb-1 sm:mb-2">
           <span className="w-1 h-1 rounded-full bg-[#0284C7]" />
           {b.tag}
         </span>
-        <h2 className="text-lg sm:text-2xl font-bold text-white leading-tight mb-1.5 whitespace-pre-line">
+        <h2 className="text-sm sm:text-lg md:text-2xl font-bold text-white leading-tight mb-0.5 sm:mb-1.5 whitespace-pre-line line-clamp-3">
           {b.title}
         </h2>
-        <p className="text-sm text-white/70 max-w-sm">{b.sub}</p>
+        <p className="text-xs sm:text-sm text-white/70 max-w-xs sm:max-w-sm line-clamp-2">{b.sub}</p>
       </div>
 
       {/* Dots */}
-      <div className="absolute bottom-4 right-5 flex gap-1.5 z-10">
+      <div className="absolute bottom-4 right-2 sm:right-5 flex gap-1.5 z-10">
         {BANNERS.map((_, i) => (
           <button
             key={i}
@@ -180,13 +180,13 @@ function HeroBanner() {
       {/* Prev / Next arrows */}
       <button
         onClick={() => goTo((current - 1 + BANNERS.length) % BANNERS.length)}
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-all duration-300"
+        className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-10 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-all duration-300"
       >
-        <Icon name="ChevronLeft" size={14} />
+        <Icon name="ChevronLeft" size={12} />
       </button>
       <button
         onClick={() => goTo((current + 1) % BANNERS.length)}
-        className="absolute right-14 top-1/2 -translate-y-1/2 z-10 w-7 h-7 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-all duration-300"
+        className="absolute right-10 sm:right-14 top-1/2 -translate-y-1/2 z-10 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-all duration-300"
       >
         <Icon name="ChevronRight" size={14} />
       </button>
@@ -313,7 +313,7 @@ export default function Dashboard({ onNavigate }: Props) {
                     <Icon name={w.icon} size={14} className="text-gold" />
                   </div>
                 </div>
-                <div className="font-mono-fin text-base sm:text-xl font-semibold break-all">{w.value}</div>
+                <div className="font-mono-fin text-base sm:text-xl font-semibold truncate">{w.value}</div>
                 <div className="text-muted-foreground text-[10px] sm:text-xs">{w.sub}</div>
               </>
             )}
@@ -323,11 +323,10 @@ export default function Dashboard({ onNavigate }: Props) {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className="card-fin p-3 sm:p-5 xl:col-span-2">
-          <div className="flex items-start sm:items-center justify-between gap-2 mb-4 sm:mb-5 flex-wrap">
-            <div className="min-w-0">
+          <div className="flex items-start sm:items-center justify-between gap-2 mb-3 sm:mb-5 flex-wrap">
+            <div className="min-w-0 max-w-full">
               <div className="text-[10px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground">Динамика</div>
-              <div className="text-sm font-medium mt-0.5 flex items-center gap-2">
-                Доходы и расходы —
+              <div className="text-xs sm:text-sm font-medium mt-0.5 flex items-center gap-1.5 sm:gap-2 flex-wrap">Доходы и расходы —
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleChartYearChange(chartYear - 1)}
                     className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">

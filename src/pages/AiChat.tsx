@@ -152,7 +152,7 @@ export default function AiChat() {
   }, [recording, speechSupported]);
 
   return (
-    <div className="animate-fade-in card-fin flex flex-col h-[calc(100dvh-9rem)] lg:h-[calc(100dvh-7rem)] min-h-[400px]">
+    <div className="animate-fade-in card-fin flex flex-col h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-7rem)] min-h-[360px]">
       {/* Header */}
       <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-border flex items-center justify-between gap-2 flex-shrink-0">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -233,14 +233,14 @@ export default function AiChat() {
       {/* Bottom panel */}
       <div className="border-t border-border flex-shrink-0">
         {/* Бегущая строка с подсказками */}
-        <div className="relative overflow-hidden border-b border-border/50 py-2" ref={marqueeRef}>
-          <div className="flex gap-2 animate-marquee whitespace-nowrap">
+        <div className="relative overflow-x-auto border-b border-border/50 py-1.5 scrollbar-none touch-pan-x" ref={marqueeRef}>
+          <div className="flex gap-1.5 sm:gap-2 px-1 animate-marquee whitespace-nowrap">
             {[...suggestions, ...suggestions].map((s, i) => (
               <button
                 key={i}
                 onClick={() => send(s)}
                 disabled={loading}
-                className="inline-flex items-center text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:border-gold/50 hover:text-foreground transition-all disabled:opacity-40 flex-shrink-0"
+                className="inline-flex items-center text-[11px] sm:text-xs px-2.5 sm:px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:border-gold/50 hover:text-foreground transition-all disabled:opacity-40 flex-shrink-0"
               >
                 {s}
               </button>
@@ -263,13 +263,7 @@ export default function AiChat() {
             <button
               onClick={toggleRecording}
               title={recording ? "Остановить запись" : "Голосовой ввод"}
-              className={`w-11 h-11 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${
-                recording
-                  ? "bg-red-500 text-white animate-pulse"
-                  : "bg-secondary border border-border text-muted-foreground hover:text-foreground hover:border-gold/40"
-              }`}
-            >
-              <Icon name={recording ? "MicOff" : "Mic"} size={17} />
+              className={`w-10 h-10 rounded-lg flex items-center justify-center
             </button>
           )}
           <button

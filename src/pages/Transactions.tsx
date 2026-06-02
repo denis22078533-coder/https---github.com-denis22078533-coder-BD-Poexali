@@ -188,7 +188,7 @@ export default function Transactions() {
 
       {/* Category filter */}
       <div className="card-fin overflow-hidden">
-        <div className="flex gap-1 p-2 sm:p-2.5 border-b border-border overflow-x-auto scrollbar-none -mx-px">
+        <div className="flex gap-1 p-2 sm:p-2.5 border-b border-border overflow-x-auto scrollbar-none -mx-px touch-pan-x">
           {["Все", ...DEFAULT_CATEGORIES, ...customCategories].map((c) => (
             <button key={c} onClick={() => setCat(c)}
               className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors flex-shrink-0 ${cat === c ? "bg-gold text-primary-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}>
@@ -284,7 +284,8 @@ export default function Transactions() {
       {/* Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-          <div className="w-full max-w-lg card-fin rounded-xl p-4 sm:p-5 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+
+          <div className="w-full max-w-lg card-fin rounded-t-2xl sm:rounded-xl p-4 sm:p-5 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold">{editTx ? "Редактировать операцию" : "Новая операция"}</h2>
               <button onClick={() => setShowForm(false)} className="text-muted-foreground hover:text-foreground"><Icon name="X" size={18} /></button>
