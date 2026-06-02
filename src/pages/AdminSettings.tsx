@@ -4,17 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BrainSettings from "@/components/BrainSettings";
 import { api, type AiSettings, type S3Settings, type DbSettingsStatus } from "@/lib/api";
 
-const models = [
-  { id: "deepseek-chat", name: "DeepSeek V3", provider: "DeepSeek (прямой ключ)", desc: "Доступная цена, прямой ключ", recommended: true },
-];
 
-const endpointByModel: Record<string, string> = {
-  "deepseek-chat": "https://api.deepseek.com/v1",
-};
 
-const providerGroups = [
-  { name: "DeepSeek (прямой ключ)", color: "text-blue-400", ids: ["deepseek-chat"] },
-];
+
 
 const visionProviders = [
   { id: "proxyapi-gpt-4o", name: "GPT-4o Vision (ProxyAPI)", desc: "Лучше всех читает рукописные суммы и таблицы", recommended: true },
@@ -205,7 +197,7 @@ export default function AdminSettings() {
     );
   }
 
-  const currentModel = models.find((m) => m.id === settings.selected_model);
+
 
   const currentVision = visionProviders.find((v) => v.id === (settings.vision_provider || "proxyapi-gpt-4o"));
 
@@ -253,8 +245,8 @@ export default function AdminSettings() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">ИИ-ассистент (чат)</div>
-              <div className="text-sm font-semibold text-foreground truncate">{currentModel?.name || settings.selected_model}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{currentModel?.provider}</div>
+              <div className="text-sm font-semibold text-foreground truncate">DeepSeek V3</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">DeepSeek (прямой ключ)</div>
               <div className="mt-1.5 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-positive animate-pulse" />
                 <span className="text-[11px] text-positive">Используется для чата и анализа</span>
@@ -279,37 +271,7 @@ export default function AdminSettings() {
         </div>
       </div>
 
-      {/* Model selection */}
-      <div className="card-fin p-3 sm:p-5">
-        <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 sm:mb-4 gold-line pl-3">Выбор модели ИИ</div>
-        <div className="space-y-3 sm:space-y-4">
-          {providerGroups.map((group) => (
-            <div key={group.name}>
-              <div className={`text-xs font-medium mb-2 ${group.color}`}>{group.name}</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {group.ids.map((id) => {
-                  const m = models.find((x) => x.id === id)!;
-                  return (
-                    <button key={id} onClick={() => setSettings((s) => ({ ...s, selected_model: id }))}
-                      className={`p-3 rounded-lg border text-left transition-all ${settings.selected_model === id ? "border-gold bg-gold/5" : "border-border hover:border-gold/30"}`}>
-                      <div className="flex items-start justify-between gap-2 mb-0.5">
-                        <span className="text-sm font-medium flex items-center gap-1.5 flex-wrap min-w-0">
-                          <span className="truncate">{m.name}</span>
-                          {m.recommended && (
-                            <span className="text-[10px] sm:text-xs bg-gold/20 text-gold px-1.5 py-0.5 rounded font-mono-fin whitespace-nowrap">Рекомендуем</span>
-                          )}
-                        </span>
-                        {settings.selected_model === id && <Icon name="CheckCircle" size={14} className="text-gold flex-shrink-0 mt-0.5" />}
-                      </div>
-                      <div className="text-xs text-muted-foreground line-clamp-2">{m.desc}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      
 
       {/* API Key + Test */}
       <div className="card-fin p-3 sm:p-5">
@@ -377,15 +339,7 @@ export default function AdminSettings() {
             </a>
           </div>
 
-          {/* Endpoint (read-only info) */}
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">API Endpoint</label>
-            <input
-              value={endpointByModel[settings.selected_model] ?? "https://api.openai.com/v1"}
-              readOnly
-              className="w-full bg-secondary border border-border rounded px-4 py-2.5 text-sm font-mono-fin text-muted-foreground focus:outline-none"
-            />
-          </div>
+          
 
           
 
@@ -564,7 +518,7 @@ export default function AdminSettings() {
                 <Icon name={testResult.ai?.ok ? "CheckCircle" : "AlertCircle"} size={15} className={`flex-shrink-0 mt-0.5 ${testResult.ai?.ok ? "text-positive" : "text-negative"}`} />
                 <div>
                   <div className={`font-medium ${testResult.ai?.ok ? "text-positive" : "text-negative"}`}>
-                    ИИ-чат ({currentModel?.name}): {testResult.ai?.ok ? "✓ работает" : "✗ ошибка"}
+                    ИИ-чат (DeepSeek V3): {testResult.ai?.ok ? "✓ работает" : "✗ ошибка"}
                   </div>
                   {!testResult.ai?.ok && testResult.ai?.error && (
                     <div className="text-xs text-negative/80 mt-0.5">{testResult.ai.error}</div>
@@ -604,47 +558,7 @@ export default function AdminSettings() {
         </div>
       </div>
 
-      {/* Generation params */}
-      <div className="card-fin p-4 sm:p-5">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4 gold-line pl-3">Параметры генерации</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1.5">Максимум токенов</label>
-            <input
-              type="number"
-              value={settings.max_tokens}
-              onChange={(e) => setSettings((s) => ({ ...s, max_tokens: Number(e.target.value) }))}
-              className="w-full bg-secondary border border-border rounded px-4 py-2.5 text-sm font-mono-fin text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
-            />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground flex items-center justify-between mb-1.5">
-              <span>Температура</span>
-              <span className="font-mono-fin text-gold">{settings.temperature}</span>
-            </label>
-            <input
-              type="range" min="0" max="1" step="0.1"
-              value={settings.temperature}
-              onChange={(e) => setSettings((s) => ({ ...s, temperature: Number(e.target.value) }))}
-              className="w-full accent-yellow-500"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>Точно</span><span>Творчески</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* System prompt */}
-      <div className="card-fin p-4 sm:p-5">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground mb-4 gold-line pl-3">Системный промпт</div>
-        <textarea
-          rows={4}
-          value={settings.system_prompt}
-          onChange={(e) => setSettings((s) => ({ ...s, system_prompt: e.target.value }))}
-          className="w-full bg-secondary border border-border rounded px-4 py-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-gold resize-none leading-relaxed"
-        />
-      </div>
+      
 
       {/* Action buttons AI */}
       <div className="flex flex-wrap items-center gap-3 pb-2">
