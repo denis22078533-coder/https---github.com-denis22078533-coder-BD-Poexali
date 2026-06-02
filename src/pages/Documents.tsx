@@ -116,7 +116,7 @@ export default function Documents() {
     try {
       let result;
       if (isImage(file.name)) {
-        const compressed = await compressImageToBase64(file, 2400, 0.92, true);
+        const compressed = await compressImageToBase64(file, 1600, 0.65, false);
         if (!alreadyUploadedUrl) {
           api.uploadDoc({ file_b64: compressed.b64, file_name: `scan_${docId}.jpg`, mime_type: "image/jpeg", doc_id: docId }).catch(() => {});
         }
@@ -140,11 +140,13 @@ export default function Documents() {
           rec_amount: result.amount_str || (result.amount ? `₽ ${result.amount}` : undefined),
           rec_date: result.date || undefined, rec_counterparty: result.counterparty || undefined, rec_inn: result.inn || undefined,
         });
+      } else {
+        await api.documents.update(docId, { status: "error" }).catch(() => {});
       }
       const updated = await api.documents.list();
       const updatedDoc = updated.documents.find((d) => d.id === docId);
       if (previewUrl) savePreview(docId, previewUrl);
-      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl };
+      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl, status: result.error ? "error" : (updatedDoc?.status || "processing") };
       setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, ...finalDoc } : d));
       setSelected((prev) => prev?.id === docId ? { ...prev, ...finalDoc } : prev);
     } catch (err) {
@@ -167,11 +169,13 @@ export default function Documents() {
           rec_amount: result.amount_str || (result.amount ? `₽ ${result.amount}` : undefined),
           rec_date: result.date || undefined, rec_counterparty: result.counterparty || undefined, rec_inn: result.inn || undefined,
         });
+      } else {
+        await api.documents.update(docId, { status: "error" }).catch(() => {});
       }
       const updated = await api.documents.list();
       const updatedDoc = updated.documents.find((d) => d.id === docId);
       if (previewUrl) savePreview(docId, previewUrl);
-      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl };
+      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl, status: result.error ? "error" : (updatedDoc?.status || "processing") };
       setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, ...finalDoc } : d));
       setSelected((prev) => prev?.id === docId ? { ...prev, ...finalDoc } : prev);
     } catch (err) {
@@ -189,7 +193,7 @@ export default function Documents() {
       let previewUrl: string | undefined;
       let compressed: { b64: string; mime: string; previewUrl: string } | null = null;
       if (isImage(f.name)) {
-        try { compressed = await compressImageToBase64(f, 2400, 0.92, true); previewUrl = compressed.previewUrl; }
+        try { compressed = await compressImageToBase64(f, 1600, 0.7, false); previewUrl = compressed.previewUrl; }
         catch { previewUrl = URL.createObjectURL(f); }
       }
       let s3Url: string | undefined;
@@ -220,7 +224,7 @@ export default function Documents() {
     setUploading(true); setUploadProgress("Загружаю файл в хранилище...");
     try {
       const compressedPages = await Promise.all(files.map(async (file) => {
-        const c = await compressImageToBase64(file, 1600, 0.75, true);
+        const c = await compressImageToBase64(file, 1600, 0.7, false);
         return { file, previewUrl: c.previewUrl, b64: c.b64, mime: c.mime };
       }));
       const totalSize = files.reduce((s, f) => s + f.size, 0);

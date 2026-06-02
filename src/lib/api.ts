@@ -21,14 +21,21 @@ export function proxyImg(url: string | null | undefined): string | undefined {
   return url;
 }
 
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data as T;
+async function request<T>(url: string, options?: RequestInit, timeoutMs = 120000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      ...options,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data as T;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ─── Transactions ───────────────────────────────────────────
