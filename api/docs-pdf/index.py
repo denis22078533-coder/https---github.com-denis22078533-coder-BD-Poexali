@@ -265,10 +265,8 @@ def handler(event: dict, context) -> dict:
         yc = get_yandex_s3_cfg(conn)
 
         if ids_param:
-            id_list = [int(x.strip()) for x in ids_param.split(",") if x.strip().isdigit()]
-
-
-                        if not id_list:
+                        id_list = [int(x.strip()) for x in ids_param.split(",") if x.strip().isdigit()]
+            if not id_list:
                 return resp(400, {"error": "Некорректные ids"})
             placeholders = ",".join(["%s"] * len(id_list))
             cur.execute(f"""
