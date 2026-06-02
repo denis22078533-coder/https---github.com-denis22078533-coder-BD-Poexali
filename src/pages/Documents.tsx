@@ -636,7 +636,7 @@ export default function Documents() {
 
       {/* Mobile buttons */}
       <div className="grid grid-cols-3 gap-2 lg:hidden">
-        <button onClick={() => { setPages([]); setShowMultiModal(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+        <button onClick={() => { setPages([]); setShowMultiModal(true); setTimeout(() => multiCameraRef.current?.click(), 300); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           className="flex flex-col items-center justify-center gap-2 p-3 card-fin border-2 border-dashed border-gold/40 rounded-xl text-gold active:scale-95 transition-transform">
           <Icon name="Camera" size={22} />
           <span className="text-xs font-medium text-center">Сфотографировать</span>
@@ -669,7 +669,7 @@ export default function Documents() {
 
       {/* Панель очереди файлов */}
       {showQueue && fileQueue.length > 0 && (
-        <div className="lg:hidden card-fin p-3 border border-gold/30 animate-fade-in">
+        <div className="card-fin p-3 border border-gold/30 animate-fade-in">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Файлы в очереди: {fileQueue.length}</span>
             <button onClick={() => { setFileQueue([]); setShowQueue(false); }}

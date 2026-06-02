@@ -390,10 +390,10 @@ export default function DocDetail({
               <div className="flex gap-2 pt-2">
                 {!(selected.transaction_id || selected.recognition?.transaction_id) && (
                   <button onClick={onOpenCreateTx}
-                    className="flex-1 py-3 sm:py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors active:scale-95 flex items-center justify-center gap-2">
-                    <Icon name="Plus" size={15} />
-                    <span className="hidden sm:inline">Создать операцию вручную</span>
-                    <span className="sm:hidden">Создать операцию</span>
+                  className="flex-1 py-3 sm:py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors active:scale-95 flex items-center justify-center gap-2">
+                  <Icon name="Plus" size={15} />
+                  <span className="hidden sm:inline">Создать операцию</span>
+                  <span className="sm:hidden">Создать</span>
                   </button>
                 )}
                 {(selected.transaction_id || selected.recognition?.transaction_id) && (

@@ -102,8 +102,8 @@ export function TxModal({
   const isExisting = !!(selected?.transaction_id || selected?.recognition?.transaction_id);
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
-      <div className="w-full sm:max-w-md card-fin rounded-t-2xl sm:rounded-xl p-5 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pb-0" onClick={onClose}>
+      <div className="w-full sm:max-w-md card-fin rounded-t-2xl sm:rounded-xl p-4 sm:p-5 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold">{isExisting ? "Исправить операцию" : "Создать операцию-расход"}</h2>
@@ -252,7 +252,7 @@ export function MultiModal({
       </div>
 
       <div className="px-4 pt-2 space-y-2 border-t border-border bg-card"
-        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}>
+        style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 16px))" }}>
         {pages.length === 0 ? (
           <button onClick={() => multiCameraRef.current?.click()}
             className="w-full py-4 bg-gold text-primary-foreground rounded-xl text-base font-semibold flex items-center justify-center gap-3 active:scale-95 transition-transform">

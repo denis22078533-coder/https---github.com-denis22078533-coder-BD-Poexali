@@ -245,11 +245,11 @@ export default function TaxReports() {
             </div>
             {loading
               ? <div className="h-6 bg-secondary/60 rounded animate-pulse w-2/3" />
-              : <div className={`font-mono-fin text-sm sm:text-lg font-semibold break-all ${item.color}`}>{item.value}</div>}
+              :               <div className={`font-mono-fin text-sm sm:text-lg font-semibold truncate ${item.color}`}>{item.value}</div>}
             {"isVat" in item && item.isVat && (
               <div className="mt-2">
                 <select value={vatRate} onChange={(e) => setVatRate(e.target.value)}
-                  className="w-full text-xs bg-secondary border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-gold">
+                  className="w-full text-xs bg-secondary border border-border rounded px-1.5 sm:px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-gold truncate">
                   {VAT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>

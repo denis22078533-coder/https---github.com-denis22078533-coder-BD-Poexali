@@ -284,7 +284,6 @@ export default function Transactions() {
       {/* Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowForm(false)}>
-
           <div className="w-full max-w-lg card-fin rounded-t-2xl sm:rounded-xl p-4 sm:p-5 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold">{editTx ? "Редактировать операцию" : "Новая операция"}</h2>
