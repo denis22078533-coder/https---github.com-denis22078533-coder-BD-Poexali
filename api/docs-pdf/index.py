@@ -1,5 +1,5 @@
 ﻿"""
-Генерация PDF со списком документов и их фотографиями.
+Генерация PDF со списком документов с метаданными и фотографиями.
 Сохраняет PDF в Яндекс S3 и возвращает URL.
 GET / — все документы (до 40)
 GET /?ids=1,2,3 — только указанные документы
@@ -37,17 +37,14 @@ def resp(status, body):
 
 
 def load_font() -> str:
-    """Загружает DejaVuSans с кириллицей. Возвращает имя шрифта."""
     if not (os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 50_000):
         try:
             r = requests.get(FONT_FALLBACK_URL, timeout=20)
             if r.status_code == 200 and len(r.content) > 50_000:
                 with open(FONT_PATH, "wb") as f:
                     f.write(r.content)
-                print(f"[docs-pdf] Font loaded from CDN, size={len(r.content)}")
-        except Exception as e2:
-            print(f"[docs-pdf] Font download failed: {e2}")
-
+        except Exception:
+            pass
     if os.path.exists(FONT_PATH) and os.path.getsize(FONT_PATH) > 50_000:
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
@@ -61,7 +58,6 @@ def load_font() -> str:
 
 
 def compress_image(url: str):
-    """Скачивает и сжимает до MAX_IMG_PX px, возвращает (bytes, w, h) или None."""
     from PIL import Image as PILImage
     try:
         r = requests.get(url, timeout=12)
@@ -78,8 +74,7 @@ def compress_image(url: str):
         img.close()
         gc.collect()
         return out.getvalue(), w, h
-    except Exception as e:
-        print(f"[docs-pdf] img err {url}: {e}")
+    except Exception:
         return None
 
 
@@ -102,7 +97,6 @@ def get_yandex_s3_cfg(conn):
 
 
 def save_pdf(pdf_bytes: bytes, filename: str, yc) -> str:
-    """Сохраняет PDF в Яндекс Object Storage. yc должен быть настроен."""
     if not yc:
         raise RuntimeError("Яндекс Object Storage не настроен.")
     key = f"reports/{filename}"
@@ -121,14 +115,12 @@ def save_pdf(pdf_bytes: bytes, filename: str, yc) -> str:
         ContentType="application/pdf",
         ContentDisposition=f'attachment; filename="{filename}"'
     )
-    url = f"{yc['endpoint']}/{yc['bucket']}/{key}"
-    return url
+    return f"{yc['endpoint']}/{yc['bucket']}/{key}"
 
 
 def draw_doc_slot(c, doc, num, x, y, slot_w, slot_h, font, max_img_h):
     from reportlab.lib.utils import ImageReader
     from reportlab.lib.units import cm
-
     font_b = "DejaVu-Bold" if font == "DejaVu" else "Helvetica-Bold"
     font_r = font if font == "DejaVu" else "Helvetica"
     pad = 0.3 * cm
@@ -145,6 +137,8 @@ def draw_doc_slot(c, doc, num, x, y, slot_w, slot_h, font, max_img_h):
         doc.get("rec_amount") or "",
         doc.get("rec_counterparty") or ""
     ] if p]
+    if doc.get("is_cashless"):
+        meta.append("Безнал")
     if meta:
         c.setFont(font_r, 7)
         c.drawString(x + pad, cur_y - 0.25 * cm, " • ".join(meta)[:90])
@@ -167,7 +161,6 @@ def generate_pdf(docs: list) -> bytes:
     from reportlab.pdfgen import canvas as rl_canvas
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
-
     font = load_font()
     W, H = A4
     margin = 1.2 * cm
@@ -197,7 +190,7 @@ def generate_pdf(docs: list) -> bytes:
 
 
 def handler(event: dict, context) -> dict:
-    """Генерирует PDF с фото документов, сохраняет в S3."""
+    """Генерирует PDF со списком документов с метаданными, сохраняет в S3."""
     if event.get("httpMethod") == "OPTIONS":
         return {"statusCode": 200, "headers": CORS, "body": ""}
 
@@ -213,12 +206,27 @@ def handler(event: dict, context) -> dict:
             id_list = [int(x) for x in ids_param.split(",") if x.isdigit()]
             if not id_list:
                 return resp(400, {"error": "Некорректные ids"})
-            placeholders = ",".join(["%s"]*len(id_list))
-            cur.execute(f"SELECT id, name, s3_url FROM {SCHEMA}.documents WHERE id IN ({placeholders}) AND status='done'", id_list)
+            placeholders = ",".join(["%s"] * len(id_list))
+            cur.execute(
+                f"""
+                SELECT id, name, s3_url, rec_amount, rec_date, rec_counterparty, is_cashless
+                FROM {SCHEMA}.documents
+                WHERE id IN ({placeholders}) AND status='done'
+                ORDER BY created_at DESC
+                """,
+                id_list,
+            )
         else:
-            cur.execute(f"SELECT id, name, s3_url FROM {SCHEMA}.documents WHERE status='done' AND s3_url IS NOT NULL")
+            cur.execute(
+                f"""
+                SELECT id, name, s3_url, rec_amount, rec_date, rec_counterparty, is_cashless
+                FROM {SCHEMA}.documents
+                WHERE status='done' AND s3_url IS NOT NULL
+                ORDER BY created_at DESC
+                """
+            )
 
-        cols = ["id", "name", "s3_url"]
+        cols = ["id", "name", "s3_url", "rec_amount", "rec_date", "rec_counterparty", "is_cashless"]
         docs = [dict(zip(cols, row)) for row in cur.fetchall()]
     finally:
         cur.close()
