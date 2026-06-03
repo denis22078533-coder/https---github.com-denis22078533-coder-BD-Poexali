@@ -24,6 +24,7 @@ interface FieldDef {
   label: string;
   placeholder: string;
   type?: "text" | "password";
+  hint?: string;
 }
 
 /* ─────────────────────── конфигурация плиток ─────────────── */
@@ -48,10 +49,10 @@ const tiles: TileDef[] = [
     icon: "HardDrive",
     color: "text-violet-400 border-violet-900/40",
     fields: [
-      { key: "bucketName", label: "Имя бакета", placeholder: "moy-buhuchet" },
-      { key: "accessKey", label: "Access Key ID", placeholder: "YCAJExxxxxxxxxxxxx" },
-      { key: "secretKey", label: "Secret Access Key", placeholder: "YCxxxxxxxxxxxxxxxx", type: "password" },
-      { key: "endpointUrl", label: "Endpoint URL", placeholder: "https://storage.yandexcloud.net" },
+      { key: "bucketName", label: "Имя бакета (Bucket Name)", placeholder: "moy-buhuchet", hint: "Пример: moy-buxgalter" },
+      { key: "accessKey", label: "Access Key ID", placeholder: "YCAJExxxxxxxxxxxxx", hint: "Пример: YCAJE0ASk-YYRHKM84fafpy88" },
+      { key: "secretKey", label: "Secret Access Key", placeholder: "YCxxxxxxxxxxxxxxxx", type: "password", hint: "Пример: YC...ваш-секретный-ключ..." },
+      { key: "endpointUrl", label: "Endpoint URL", placeholder: "https://storage.yandexcloud.net", hint: "Должно быть: https://storage.yandexcloud.net" },
     ],
   },
 ];
@@ -65,6 +66,8 @@ function TileDialog({
   onOpenChange,
   onSave,
   saving,
+  onTest,
+  testing,
 }: {
   tile: TileDef;
   data: Record<string, string>;
@@ -73,6 +76,8 @@ function TileDialog({
   onOpenChange: (v: boolean) => void;
   onSave?: () => void;
   saving?: boolean;
+  onTest?: () => void;
+  testing?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -98,11 +103,28 @@ function TileDialog({
                 placeholder={f.placeholder}
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm font-mono-fin text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-500 transition-colors"
               />
+              {f.hint && (
+                <span className="block text-[11px] text-zinc-500 mt-1.5">{f.hint}</span>
+              )}
             </div>
           ))}
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2 pt-2 flex-wrap">
+          {onTest && (
+            <button
+              onClick={onTest}
+              disabled={testing || saving}
+              className="px-4 py-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 text-sm rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {testing ? (
+                <div className="w-4 h-4 rounded-full border-2 border-zinc-300 border-t-transparent animate-spin" />
+              ) : (
+                <Icon name="Wifi" size={14} />
+              )}
+              Проверить подключение
+            </button>
+          )}
           {onSave && (
             <button
               onClick={onSave}
@@ -150,6 +172,7 @@ export default function BrainSettings() {
 
   const [activeTile, setActiveTile] = useState<string | null>(null);
   const [savingStorage, setSavingStorage] = useState(false);
+  const [testingStorage, setTestingStorage] = useState(false);
 
   const handleChange = (key: string, val: string) => {
     if (!activeTile) return;
@@ -172,12 +195,29 @@ export default function BrainSettings() {
       }
 
       await api.s3Settings.update(payload);
-      alert("Настройки сохранены в БД!");
+      alert("Настройки сохранены");
     } catch (e) {
       console.error("Ошибка сохранения хранилища:", e);
       alert("Ошибка: " + (e instanceof Error ? e.message : "Неизвестная ошибка"));
     } finally {
       setSavingStorage(false);
+    }
+  };
+
+  /* ── проверка подключения Хранилища ────────────────────── */
+  const handleTestStorage = async () => {
+    setTestingStorage(true);
+    try {
+      const res = await api.s3Settings.test();
+      if (res.ok) {
+        alert("Подключение успешно!");
+      } else {
+        alert("Ошибка подключения: " + (res.error || "неизвестная ошибка"));
+      }
+    } catch (e) {
+      alert("Ошибка: " + (e instanceof Error ? e.message : "Неизвестная ошибка"));
+    } finally {
+      setTestingStorage(false);
     }
   };
 
@@ -270,6 +310,16 @@ export default function BrainSettings() {
           saving={
             tile.id === "storage"
               ? savingStorage
+              : undefined
+          }
+          onTest={
+            tile.id === "storage"
+              ? handleTestStorage
+              : undefined
+          }
+          testing={
+            tile.id === "storage"
+              ? testingStorage
               : undefined
           }
         />

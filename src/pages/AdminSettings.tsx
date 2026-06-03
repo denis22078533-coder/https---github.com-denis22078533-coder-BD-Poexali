@@ -730,7 +730,7 @@ function DatabaseSettings({
           <p className="text-xs text-muted-foreground mb-3">
             Вставьте DATABASE_URL от вашего PostgreSQL-провайдера:
           </p>
-          <div className="flex gap-2">
+                    <div className="flex gap-2">
             <input
               type="text"
               value={dbManualUrl}
@@ -747,6 +747,9 @@ function DatabaseSettings({
               )}
               Сохранить
             </button>
+          </div>
+          <div className="text-xs text-muted-foreground mt-1.5">
+            Получите DATABASE_URL на <span className="font-medium">Supabase</span> (supabase.com), <span className="font-medium">Aiven</span> (aiven.io) или <span className="font-medium">Railway</span> (railway.app)
           </div>
           {dbUrlSaved && (
             <div className="mt-2 flex items-center gap-1.5 text-xs text-positive">
@@ -929,7 +932,7 @@ function DatabaseSettings({
           </p>
         )}
 
-        <div className="flex gap-2">
+                <div className="flex gap-2">
           <input
             type="text"
             value={dbManualUrl}
@@ -946,6 +949,9 @@ function DatabaseSettings({
             )}
             Сохранить
           </button>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1.5">
+          Получите DATABASE_URL на <span className="font-medium">Supabase</span> (supabase.com), <span className="font-medium">Aiven</span> (aiven.io) или <span className="font-medium">Railway</span> (railway.app)
         </div>
         {dbUrlSaved && (
           <div className="mt-2 flex items-center gap-1.5 text-xs text-positive">
@@ -1083,3 +1089,4 @@ function DatabaseSettings({
     </div>
   );
 }
+
