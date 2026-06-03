@@ -4,7 +4,7 @@ import { api, fmt, type DashboardSummary } from "@/lib/api";
 
 const BANNERS = [
   {
-    img: "https://images.unsplash.com/photo-1587614382346-ac4696d0cf12?auto=format&fit=crop&w=1200&q=80", // Обновлено: улыбающаяся девушка за ноутбуком
+    img: "",
     tag: "Butsky Group",
     title: "Команда профессионалов\nна страже вашего учёта",
     sub: "Интеллектуальная автоматизация учёта, созданная экспертом",
@@ -66,7 +66,7 @@ function HeroBanner() {
   const b = BANNERS[current];
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl" style={{ height: "clamp(160px, 25vw, 220px)" }}>
+    <div className="relative w-full overflow-hidden rounded-xl" style={{ height: "clamp(200px, 35vw, 240px)" }}>
       {/* Background image */}
       {b.img ? (
         <div
@@ -97,28 +97,29 @@ function HeroBanner() {
           </svg>
           {/* Центральный логотип BG */}
           <div
-            className="absolute inset-0 flex flex-col items-center justify-center gap-4 transition-opacity duration-300"
+            className="absolute inset-0 flex flex-col items-center justify-center gap-2 sm:gap-4 transition-opacity duration-300 px-2 sm:px-4"
             style={{ opacity: animating ? 0 : 1 }}
           >
-            <div className="flex items-center gap-4">
-              <svg width="64" height="64" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"
+            <div className="flex items-center gap-2 sm:gap-4">
+              <svg width="40" height="40" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg"
+                className="sm:w-[64px] sm:h-[64px]"
                 style={{ filter: "drop-shadow(0 0 16px rgba(2,132,199,0.5))" }}>
                 <polygon points="18,2 33,10 33,26 18,34 3,26 3,10" fill="#0F172A" stroke="#0284C7" strokeWidth="1.5"/>
                 <text x="18" y="23" textAnchor="middle" fontFamily="Inter, sans-serif" fontWeight="700" fontSize="12" fill="#ffffff" letterSpacing="-0.5">BG</text>
               </svg>
               <div className="text-left">
-                <div className="text-3xl font-bold text-white tracking-tight leading-none">Butsky Group</div>
-                <div className="text-[#0284C7] text-sm font-medium tracking-widest mt-1">ФИНАНСОВЫЕ ТЕХНОЛОГИИ</div>
+                <div className="text-base sm:text-3xl font-bold text-white tracking-tight leading-none">Butsky Group</div>
+                <div className="text-[10px] sm:text-sm text-[#0284C7] font-medium tracking-widest mt-0.5 sm:mt-1">ФИНАНСОВЫЕ ТЕХНОЛОГИИ</div>
               </div>
             </div>
-            <div className="text-white/50 text-xs tracking-wider text-center max-w-xs">
+            <div className="text-white/50 text-[10px] sm:text-xs tracking-wider text-center max-w-[200px] sm:max-w-xs truncate sm:whitespace-normal">
               Авторская программа бухгалтерского учёта
             </div>
             {/* Декоративная линия */}
-            <div className="flex items-center gap-3">
-              <div className="h-px w-16 bg-[#0284C7]/40" />
-              <div className="w-1.5 h-1.5 rounded-full bg-[#0284C7]" />
-              <div className="h-px w-16 bg-[#0284C7]/40" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="h-px w-8 sm:w-16 bg-[#0284C7]/40" />
+              <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-[#0284C7]" />
+              <div className="h-px w-8 sm:w-16 bg-[#0284C7]/40" />
             </div>
           </div>
         </div>
@@ -147,17 +148,17 @@ function HeroBanner() {
 
       {/* Content — всегда поверх градиента */}
       <div
-        className="absolute inset-0 z-10 flex flex-col justify-end p-3 sm:p-7 transition-opacity duration-300"
+        className="absolute inset-0 z-10 flex flex-col justify-end p-2.5 sm:p-7 pb-8 sm:pb-7 transition-opacity duration-300"
         style={{ opacity: animating ? 0 : 1 }}
       >
-        <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold tracking-widest text-[#0284C7] uppercase mb-1 sm:mb-2">
+        <span className="inline-flex items-center gap-1.5 text-[9px] xs:text-[10px] sm:text-[11px] font-semibold tracking-widest text-[#0284C7] uppercase mb-0.5 sm:mb-2">
           <span className="w-1 h-1 rounded-full bg-[#0284C7]" />
           {b.tag}
         </span>
-        <h2 className="text-sm sm:text-lg md:text-2xl font-bold text-white leading-tight mb-0.5 sm:mb-1.5 whitespace-pre-line line-clamp-3">
+        <h2 className="text-[10px] xs:text-xs sm:text-lg md:text-2xl font-bold text-white leading-tight mb-0.5 sm:mb-1.5 whitespace-pre-line line-clamp-2 sm:line-clamp-3">
           {b.title}
         </h2>
-        <p className="text-xs sm:text-sm text-white/70 max-w-xs sm:max-w-sm line-clamp-2">{b.sub}</p>
+        <p className="text-[8px] xs:text-[10px] sm:text-sm text-white/70 max-w-[160px] xs:max-w-xs sm:max-w-sm line-clamp-1 sm:line-clamp-2">{b.sub}</p>
       </div>
 
       {/* Dots */}
