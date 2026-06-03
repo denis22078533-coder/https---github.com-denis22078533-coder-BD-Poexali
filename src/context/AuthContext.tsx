@@ -49,6 +49,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ token: null, email: null, balance: 0 });
   };
 
+  async function refreshBalanceAfterLogin(token: string) {
+    try {
+      const res = await request<{ email: string; balance: number }>("/auth/me", {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+      setState((prev) => ({ ...prev, balance: res.balance }));
+    } catch {
+      // Если не получилось — ок, просто будет 0
+    }
+  }
+
   const login = useCallback(async (email: string, password: string) => {
     const res = await request<{ access_token: string; token_type: string }>("/auth/login", {
       method: "POST",
@@ -80,17 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Удаляем session_id из куки, т.к. гостевая сессия больше не нужна
     document.cookie = "session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
   }, []);
-
-  const refreshBalanceAfterLogin = async (token: string) => {
-    try {
-      const res = await request<{ email: string; balance: number }>("/auth/me", {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      });
-      setState((prev) => ({ ...prev, balance: res.balance }));
-    } catch {
-      // Если не получилось — ок, просто будет 0
-    }
-  };
 
   const refreshBalance = useCallback(async () => {
     if (!state.token) return;

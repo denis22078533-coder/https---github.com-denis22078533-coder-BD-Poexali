@@ -10,6 +10,7 @@ import TaxReports from "@/pages/TaxReports";
 import AdminSettings from "@/pages/AdminSettings";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import AuthButton from "@/components/AuthButton";
+import SidebarUser from "@/components/SidebarUser";
 
 type Section = "dashboard" | "transactions" | "documents" | "chat" | "taxes" | "admin";
 
