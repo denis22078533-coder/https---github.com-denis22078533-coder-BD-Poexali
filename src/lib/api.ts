@@ -316,6 +316,8 @@ export interface AiSettings {
   proxyapi_key_set?: boolean;
   proxyapi_key_masked?: string;
   vision_provider?: string;
+  guest_free_limit?: number;
+  registration_bonus?: number;
   updated_at?: string;
 }
 

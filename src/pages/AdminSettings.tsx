@@ -17,8 +17,90 @@ const visionProviders = [
   { id: "yandex", name: "Яндекс Vision OCR (свой ключ)", desc: "Отличен для русского — нужен Folder ID" },
 ];
 
+// ─── Компонент Пользователи ──────────────────────────────
+
+interface UserSettingsCardProps {
+  settings: AiSettings;
+  setSettings: (s: AiSettings) => void;
+  handleSave: () => Promise<void>;
+  saving: boolean;
+  saved: boolean;
+  saveError: string;
+}
+
+function UserSettingsCard({ settings, setSettings, handleSave, saving, saved, saveError }: UserSettingsCardProps) {
+  return (
+    <div className="space-y-4">
+      {/* Карточка: лимит для гостя */}
+      <div className="card-fin p-4 sm:p-5">
+        <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 gold-line pl-3">
+          Бесплатные запросы без регистрации
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Сколько раз человек может попробовать распознать документ, не заходя в аккаунт.
+          После этого появится сообщение «Зарегистрируйтесь и пополните баланс».
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={settings.guest_free_limit ?? 5}
+            onChange={(e) =>
+              setSettings({ ...settings, guest_free_limit: parseInt(e.target.value) || 0 })
+            }
+            className="w-24 bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground text-center focus:outline-none focus:ring-1 focus:ring-gold"
+          />
+          <span className="text-xs text-muted-foreground">запросов</span>
+        </div>
+        <div className="mt-2 text-xs text-muted-foreground">
+          <strong>По умолчанию:</strong> 5. Если поставить 0 — гости не смогут ничего делать.
+        </div>
+      </div>
+
+      {/* Карточка: бонус при регистрации */}
+      <div className="card-fin p-4 sm:p-5">
+        <div className="text-[11px] sm:text-xs uppercase tracking-wider sm:tracking-widest text-muted-foreground mb-3 gold-line pl-3">
+          Начисление при регистрации
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Сколько запросов получает новый пользователь сразу после регистрации.
+          Эти запросы добавляются к тем, что могли остаться у гостя (если он зарегистрировался).
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="number"
+            min={0}
+            max={1000}
+            value={settings.registration_bonus ?? 5}
+            onChange={(e) =>
+              setSettings({ ...settings, registration_bonus: parseInt(e.target.value) || 0 })
+            }
+            className="w-24 bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground text-center focus:outline-none focus:ring-1 focus:ring-gold"
+          />
+          <span className="text-xs text-muted-foreground">запросов</span>
+        </div>
+        <div className="mt-2 text-xs text-muted-foreground">
+          <strong>По умолчанию:</strong> 5. Если поставить 0 — новый пользователь получит 0.
+        </div>
+      </div>
+
+      {/* Кнопка сохранения */}
+      <div className="flex items-center gap-3">
+        <button onClick={handleSave} disabled={saving}
+          className="px-5 py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors flex items-center gap-2 disabled:opacity-50">
+          {saving ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" /> : <Icon name="Save" size={15} />}
+          Сохранить настройки пользователей
+        </button>
+        {saved && <span className="flex items-center gap-1.5 text-xs text-positive animate-fade-in"><Icon name="CheckCircle" size={13} /> Сохранено</span>}
+        {saveError && <span className="flex items-center gap-1.5 text-xs text-negative animate-fade-in"><Icon name="AlertCircle" size={13} /> {saveError}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminSettings() {
-  const [settings, setSettings] = useState<AiSettings>({
+    const [settings, setSettings] = useState<AiSettings>({
     selected_model: "deepseek-chat",
     max_tokens: 4096,
     temperature: 0.3,
@@ -26,6 +108,8 @@ export default function AdminSettings() {
     api_key_set: false,
     api_key_masked: "",
     vision_provider: "proxyapi-gpt-4o",
+    guest_free_limit: 5,
+    registration_bonus: 5,
   });
     const [apiKeyInput, setApiKeyInput] = useState("");
   const [showKey, setShowKey] = useState(false);
@@ -176,6 +260,14 @@ export default function AdminSettings() {
           >
             <Icon name="Cpu" size={15} />
             Мозг
+          </TabsTrigger>
+                    <TabsTrigger
+            value="users"
+            className="data-[state=active]:bg-zinc-800 data-[state=active]:text-zinc-100 text-zinc-400 text-xs sm:text-sm gap-1.5"
+          >
+            <Icon name="Users" size={15} />
+            <span className="hidden sm:inline">Пользователи</span>
+            <span className="sm:hidden">→</span>
           </TabsTrigger>
           <TabsTrigger
             value="database"
@@ -532,7 +624,11 @@ export default function AdminSettings() {
       </div>
 
 
-              </TabsContent>
+                            </TabsContent>
+
+        <TabsContent value="users" className="mt-0 space-y-3 sm:space-y-4">
+          <UserSettingsCard settings={settings} setSettings={setSettings} handleSave={handleSave} saving={saving} saved={saved} saveError={saveError} />
+        </TabsContent>
 
         <TabsContent value="brain" className="mt-0">
           <BrainSettings />

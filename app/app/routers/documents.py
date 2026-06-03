@@ -4,11 +4,16 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Response
 from sqlalchemy.orm import Session
 from ..auth import get_db, get_current_user
-from ..models import Document, User
+from ..models import Document, User, Setting
 from ..schemas import DocumentResponse
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 UPLOAD_DIR = "uploads"
+def get_guest_free_limit(db: Session) -> int:
+    """Читает лимит бесплатных запросов для гостей из таблицы _settings."""
+    row = db.query(Setting).filter(Setting.key == "guest_free_limit").first()
+    return int(row.value) if row and row.value else 5
+
 FREE_LIMIT = 5
 
 def get_session_id(request: Request) -> str:
@@ -35,8 +40,9 @@ async def upload_document(
     else:
         # Неавторизованный: проверяем лимит по session_id
         session_id = get_session_id(request)
+        free_limit = get_guest_free_limit(db)
         count = db.query(Document).filter(Document.session_id == session_id).count()
-        if count >= FREE_LIMIT:
+        if count >= free_limit:
             raise HTTPException(
                 status_code=403,
                 detail="Бесплатные попытки закончились. Зарегистрируйтесь и пополните баланс."

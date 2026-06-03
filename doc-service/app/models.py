@@ -12,6 +12,12 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     documents = relationship("Document", back_populates="owner")
 
+class Setting(Base):
+    __tablename__ = "_settings"
+    key = Column(String(255), primary_key=True)
+    value = Column(String, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class Document(Base):
     __tablename__ = "documents"
     id = Column(Integer, primary_key=True, index=True)
