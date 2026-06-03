@@ -29,18 +29,6 @@ interface FieldDef {
 /* ─────────────────────── конфигурация плиток ─────────────── */
 const tiles: TileDef[] = [
   {
-    id: "database",
-    title: "База данных",
-    desc: "Подключение Supabase PostgreSQL",
-    icon: "Database",
-    color: "text-emerald-400 border-emerald-900/40",
-    fields: [
-      { key: "supabaseUrl", label: "Supabase URL", placeholder: "https://xxxxxxxx.supabase.co" },
-      { key: "supabaseKey", label: "Service Role Key", placeholder: "eyJhbGciOi..." },
-      { key: "dbSchema", label: "Схема", placeholder: "public" },
-    ],
-  },
-  {
     id: "functions",
     title: "Функции",
     desc: "Статус скриптов FastAPI",
@@ -144,20 +132,17 @@ function TileDialog({
 /* ─────────────────────── главный компонент ───────────────── */
 export default function BrainSettings() {
   /* состояние для каждой плитки */
-  const [dbData, setDbData] = useState<Record<string, string>>({});
   const [fnData, setFnData] = useState<Record<string, string>>({});
 
   const [stData, setStData] = useState<Record<string, string>>({});
 
   const allData: Record<string, Record<string, string>> = {
-    database: dbData,
     functions: fnData,
 
     storage: stData,
   };
 
   const setters: Record<string, React.Dispatch<React.SetStateAction<Record<string, string>>>> = {
-    database: setDbData,
     functions: setFnData,
 
     storage: setStData,
