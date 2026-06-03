@@ -14,6 +14,7 @@ export default function RegisterDialog({ open, onOpenChange, onSwitchToLogin }: 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,27 +22,19 @@ export default function RegisterDialog({ open, onOpenChange, onSwitchToLogin }: 
     e.preventDefault();
     setError("");
 
-    if (password.length < 6) {
-      setError("Пароль должен быть не менее 6 символов");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Пароли не совпадают");
-      return;
-    }
-
     setLoading(true);
-    try {
-      await register(email, password);
+    const result = await register({ email, password, confirmPassword, companyName: companyName || undefined });
+    
+    if (result.success) {
       onOpenChange(false);
       setEmail("");
       setPassword("");
       setConfirmPassword("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка регистрации");
-    } finally {
-      setLoading(false);
+      setCompanyName("");
+    } else {
+      setError(result.error || "Ошибка регистрации");
     }
+    setLoading(false);
   };
 
   return (
@@ -59,44 +52,64 @@ export default function RegisterDialog({ open, onOpenChange, onSwitchToLogin }: 
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">Email</label>
+            <label className="text-xs text-muted-foreground block mb-1.5 flex items-center gap-1">
+              Email <span className="text-negative">*</span>
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               required
-              className="w-full bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold"
+              autoComplete="email"
+              className="w-full bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold transition-shadow"
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">Пароль</label>
+            <label className="text-xs text-muted-foreground block mb-1.5 flex items-center gap-1">
+              Пароль <span className="text-negative">*</span>
+              <span className="text-[10px] text-muted-foreground font-normal ml-auto">минимум 8 символов, A-Z, a-z, 0-9</span>
+            </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Минимум 6 символов"
+              placeholder="Придумайте надёжный пароль"
               required
-              minLength={6}
-              className="w-full bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold"
+              minLength={8}
+              autoComplete="new-password"
+              className="w-full bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold transition-shadow"
             />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">Подтвердите пароль</label>
+            <label className="text-xs text-muted-foreground block mb-1.5 flex items-center gap-1">
+              Подтвердите пароль <span className="text-negative">*</span>
+            </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Повторите пароль"
               required
-              className="w-full bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold"
+              autoComplete="new-password"
+              className="w-full bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold transition-shadow"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1.5">Название компании (опционально)</label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="ООО «Моя компания»"
+              className="w-full bg-secondary border border-border rounded px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-gold transition-shadow"
             />
           </div>
 
           {error && (
-            <div className="flex items-center gap-1.5 text-xs text-negative bg-red-900/20 border border-red-900/30 rounded p-2">
-              <Icon name="AlertCircle" size={13} />
-              {error}
+            <div className="flex items-start gap-2 text-xs text-negative bg-red-900/20 border border-red-900/30 rounded p-2.5">
+              <Icon name="AlertCircle" size={14} className="mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 

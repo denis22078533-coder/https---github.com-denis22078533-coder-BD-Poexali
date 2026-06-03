@@ -20,16 +20,16 @@ export default function LoginDialog({ open, onOpenChange, onSwitchToRegister }: 
     e.preventDefault();
     setError("");
     setLoading(true);
-    try {
-      await login(email, password);
+    
+    const result = await login(email, password);
+    if (result.success) {
       onOpenChange(false);
       setEmail("");
       setPassword("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка входа");
-    } finally {
-      setLoading(false);
+    } else {
+      setError(result.error || "Ошибка входа");
     }
+    setLoading(false);
   };
 
   return (
@@ -70,9 +70,9 @@ export default function LoginDialog({ open, onOpenChange, onSwitchToRegister }: 
           </div>
 
           {error && (
-            <div className="flex items-center gap-1.5 text-xs text-negative bg-red-900/20 border border-red-900/30 rounded p-2">
-              <Icon name="AlertCircle" size={13} />
-              {error}
+            <div className="flex items-start gap-2 text-xs text-negative bg-red-900/20 border border-red-900/30 rounded p-2.5">
+              <Icon name="AlertCircle" size={14} className="mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
