@@ -1,8 +1,10 @@
 from pydantic import BaseModel
+from typing import Optional
 
 class RegisterRequest(BaseModel):
     email: str
     password: str
+    session_id: Optional[str] = None
 
 class LoginRequest(BaseModel):
     email: str

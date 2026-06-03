@@ -60,13 +60,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
+    // Читаем session_id из куки (если был гостевой режим)
+    const getCookie = (name: string) => {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : undefined;
+    };
+    const sessionId = getCookie("session_id");
+    const body: Record<string, unknown> = { email, password };
+    if (sessionId) {
+      body.session_id = sessionId;
+    }
     const res = await request<{ access_token: string }>("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
     });
     saveToken(res.access_token, email);
     // После регистрации сразу получаем баланс (должен быть с бонусом)
     await refreshBalanceAfterLogin(res.access_token);
+    // Удаляем session_id из куки, т.к. гостевая сессия больше не нужна
+    document.cookie = "session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
   }, []);
 
   const refreshBalanceAfterLogin = async (token: string) => {

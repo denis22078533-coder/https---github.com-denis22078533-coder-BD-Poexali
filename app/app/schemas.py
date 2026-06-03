@@ -4,6 +4,7 @@ from typing import Optional
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
+    session_id: Optional[str] = None
 
 class LoginRequest(BaseModel):
     email: EmailStr

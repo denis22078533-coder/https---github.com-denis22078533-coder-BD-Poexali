@@ -22,6 +22,15 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Перенос гостевых документов к новому пользователю, если передан session_id
+    if request.session_id:
+        guest_docs = db.query(Document).filter(Document.session_id == request.session_id).all()
+        for doc in guest_docs:
+            doc.user_id = user.id
+            doc.session_id = None
+        db.commit()
+
     token = create_access_token(data={"sub": user.email})
     return TokenResponse(access_token=token)
 
