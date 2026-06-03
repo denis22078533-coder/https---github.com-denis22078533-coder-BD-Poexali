@@ -555,8 +555,14 @@ export default function AdminSettings() {
             setDbSavingUrl={setDbSavingUrl}
             dbUrlSaved={dbUrlSaved}
             setDbUrlSaved={setDbUrlSaved}
-            onRefresh={() => {
-              api.dbSettings.get().then(setDbStatus);
+                        onRefresh={async () => {
+              try {
+                const res = await api.dbSettings.get();
+                setDbStatus(res);
+              } catch (e) {
+                console.error('Ошибка получения статуса БД:', e);
+                // Можно показать уведомление, но пока просто не обновляем
+              }
             }}
           />
         </TabsContent>
@@ -666,13 +672,8 @@ function DatabaseSettings({
     }
   };
 
-    const installed = dbStatus?.installed ?? false;
-  const running = dbStatus?.running ?? false;
-  const configured = dbStatus?.configured ?? false;
-  const connected = dbStatus?.connected ?? false;
-
-  // Если статус ещё не получен — показываем кнопку для ручной проверки
-  if (!dbStatus) {
+    // Если статус ещё не получен — показываем кнопку для ручной проверки
+    if (!dbStatus) {
     return (
       <div className="space-y-4 animate-fade-in">
         {/* Приветственная карточка */}
@@ -788,6 +789,13 @@ function DatabaseSettings({
     );
   }
 
+    // Защита от undefined значений
+  const safeStatus = dbStatus || {};
+  const installed = safeStatus.installed ?? false;
+  const running = safeStatus.running ?? false;
+  const configured = safeStatus.configured ?? false;
+  const connected = safeStatus.connected ?? false;
+
   return (
     <div className="space-y-4">
       {/* ── Статус ──────────────────────────────── */}
@@ -814,34 +822,34 @@ function DatabaseSettings({
         </div>
 
         {/* Версия и таблицы */}
-                {dbStatus.version && (
+        {safeStatus.version && (
           <div className="text-xs text-muted-foreground mb-2">
-            <span className="text-foreground font-medium">Версия:</span> {dbStatus.version}
+            <span className="text-foreground font-medium">Версия:</span> {safeStatus.version}
           </div>
         )}
-        {dbStatus.size_mb !== undefined && dbStatus.size_mb !== null && (
+        {safeStatus.size_mb !== undefined && safeStatus.size_mb !== null && (
           <div className="text-xs text-muted-foreground mb-2">
-            <span className="text-foreground font-medium">Занято:</span> {dbStatus.size_mb.toFixed(2)} МБ
+            <span className="text-foreground font-medium">Занято:</span> {safeStatus.size_mb.toFixed(2)} МБ
           </div>
         )}
-        {dbStatus.schema_exists && (
+        {safeStatus.schema_exists && (
           <div className="text-xs text-muted-foreground mb-2">
-            <span className="text-foreground font-medium">Таблиц в схеме:</span> {dbStatus.tables_count ?? 0}
-            {dbStatus.tables && dbStatus.tables.length > 0 && (
+            <span className="text-foreground font-medium">Таблиц в схеме:</span> {safeStatus.tables_count ?? 0}
+            {safeStatus.tables && safeStatus.tables.length > 0 && (
               <span className="ml-2 text-muted-foreground/70">
-                ({dbStatus.tables.join(", ")})
+                ({safeStatus.tables.join(", ")})
               </span>
             )}
           </div>
         )}
-        {dbStatus.migrations_applied !== undefined && (
+        {safeStatus.migrations_applied !== undefined && (
           <div className="text-xs text-muted-foreground">
-            <span className="text-foreground font-medium">Миграций применено:</span> {dbStatus.migrations_applied} / {dbStatus.migrations_total ?? dbStatus.migration_files?.length ?? "?"}
+            <span className="text-foreground font-medium">Миграций применено:</span> {safeStatus.migrations_applied} / {safeStatus.migrations_total ?? safeStatus.migration_files?.length ?? "?"}
           </div>
         )}
-        {dbStatus.connection_error && (
+        {safeStatus.connection_error && (
           <div className="mt-2 p-2 rounded bg-red-900/20 border border-red-900/30 text-xs text-red-400">
-            {dbStatus.connection_error}
+            {safeStatus.connection_error}
           </div>
         )}
 
