@@ -40,8 +40,14 @@ export default defineConfig(({mode}) => ({
         port: 5173,
         allowedHosts: true,
         hmr: {
-            overlay: false, // Disables the error overlay if you only want console errors
-            timeout: 7000, // pingInterval @vite/client — нужен <30s для DDoS Guard
+            overlay: false,
+            timeout: 7000,
+        },
+        proxy: {
+            '/api': {
+                target: 'http://localhost:8000',
+                changeOrigin: true,
+            }
         }
     },
 }));
