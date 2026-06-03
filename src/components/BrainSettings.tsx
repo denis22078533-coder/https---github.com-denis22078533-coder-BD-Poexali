@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { api } from "@/lib/api";
 import {
@@ -68,6 +68,8 @@ function TileDialog({
   saving,
   onTest,
   testing,
+  sizeMb,
+  loadingSize,
 }: {
   tile: TileDef;
   data: Record<string, string>;
@@ -78,6 +80,8 @@ function TileDialog({
   saving?: boolean;
   onTest?: () => void;
   testing?: boolean;
+  sizeMb?: number | null;
+  loadingSize?: boolean;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -125,6 +129,19 @@ function TileDialog({
               Проверить подключение
             </button>
           )}
+          {onTest && tile.id === 'storage' && sizeMb !== null && sizeMb !== undefined && (
+            <span className="text-xs text-zinc-400 flex items-center gap-1">
+              <Icon name="HardDrive" size={12} />
+              Занято: {sizeMb.toFixed(2)} МБ
+            </span>
+          )}
+          {onTest && tile.id === 'storage' && loadingSize && (
+            <div className="w-4 h-4 rounded-full border-2 border-zinc-500 border-t-transparent animate-spin" />
+          )}
+          {onTest && tile.id === 'storage' && !loadingSize && sizeMb === null && (
+            <span className="text-xs text-zinc-600">Размер недоступен</span>
+          )}
+
           {onSave && (
             <button
               onClick={onSave}
@@ -157,6 +174,7 @@ export default function BrainSettings() {
   const [fnData, setFnData] = useState<Record<string, string>>({});
 
   const [stData, setStData] = useState<Record<string, string>>({});
+  const [storageSizeMb, setStorageSizeMb] = useState<number | null>(null);
 
   const allData: Record<string, Record<string, string>> = {
     functions: fnData,
@@ -173,11 +191,31 @@ export default function BrainSettings() {
   const [activeTile, setActiveTile] = useState<string | null>(null);
   const [savingStorage, setSavingStorage] = useState(false);
   const [testingStorage, setTestingStorage] = useState(false);
+  const [loadingStorageSize, setLoadingStorageSize] = useState(false);
 
   const handleChange = (key: string, val: string) => {
     if (!activeTile) return;
     setters[activeTile]?.((prev) => ({ ...prev, [key]: val }));
   };
+
+  /* ── загрузка размера хранилища при открытии модалки ── */
+  const loadStorageSize = async () => {
+    if (activeTile !== 'storage') return;
+    setLoadingStorageSize(true);
+    try {
+      const res = await api.s3Settings.get();
+      setStorageSizeMb(res.settings.size_mb ?? null);
+    } catch {
+      setStorageSizeMb(null);
+    } finally {
+      setLoadingStorageSize(false);
+    }
+  };
+
+  // Загружаем размер при открытии модалки storage
+  useEffect(() => {
+    loadStorageSize();
+  }, [activeTile]);
 
   /* ── сохранение Хранилища → api.s3Settings.update ──────── */
   const handleSaveStorage = async () => {
@@ -320,6 +358,16 @@ export default function BrainSettings() {
           testing={
             tile.id === "storage"
               ? testingStorage
+              : undefined
+          }
+          sizeMb={
+            tile.id === "storage"
+              ? storageSizeMb
+              : undefined
+          }
+          loadingSize={
+            tile.id === "storage"
+              ? loadingStorageSize
               : undefined
           }
         />

@@ -91,7 +91,7 @@ def handler(event: dict, context) -> dict:
             except Exception as e:
                 return resp(200, {"ok": False, "error": str(e)})
 
-        # GET / — получить текущие настройки
+                # GET / — получить текущие настройки
         if method == "GET":
             s = get_settings(cur)
             if not s:
@@ -99,14 +99,46 @@ def handler(event: dict, context) -> dict:
                     "bucket_name": "", "endpoint_url": YANDEX_ENDPOINT,
                     "access_key": "", "secret_key_masked": "",
                     "configured": False, "use_yandex": True,
+                    "size_mb": None,
                 }})
+
+            # Попытаемся получить суммарный размер объектов в бакете
+            size_mb = None
+            if s["access_key"] and s["bucket_name"]:
+                try:
+                    endpoint = s["endpoint_url"].rstrip("/") if s["endpoint_url"] else YANDEX_ENDPOINT
+                    if not endpoint.startswith("http"):
+                        endpoint = "https://" + endpoint
+                    client = boto3.client(
+                        "s3",
+                        endpoint_url=endpoint,
+                        aws_access_key_id=s["access_key"],
+                        aws_secret_access_key=s["secret_key"],
+                        config=Config(
+                            connect_timeout=8,
+                            read_timeout=10,
+                            s3={"addressing_style": "virtual"},
+                        ),
+                        region_name="ru-central1",
+                    )
+                    total_bytes = 0
+                    paginator = client.get_paginator("list_objects_v2")
+                    for page in paginator.paginate(Bucket=s["bucket_name"]):
+                        if "Contents" in page:
+                            for obj in page["Contents"]:
+                                total_bytes += obj.get("Size", 0)
+                    size_mb = round(total_bytes / (1048576.0), 2)
+                except Exception:
+                    size_mb = None
+
             return resp(200, {"settings": {
                 "bucket_name": s["bucket_name"],
                 "endpoint_url": s["endpoint_url"] or YANDEX_ENDPOINT,
                 "access_key": s["access_key"],
                 "secret_key_masked": mask(s["secret_key"]),
                 "configured": bool(s["access_key"] and s["bucket_name"]),
-                                "use_yandex": True,
+                "use_yandex": True,
+                "size_mb": size_mb,
             }})
 
         # PUT / — сохранить настройки

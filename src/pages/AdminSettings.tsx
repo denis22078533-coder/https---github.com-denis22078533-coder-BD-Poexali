@@ -814,9 +814,14 @@ function DatabaseSettings({
         </div>
 
         {/* Версия и таблицы */}
-        {dbStatus.version && (
+                {dbStatus.version && (
           <div className="text-xs text-muted-foreground mb-2">
             <span className="text-foreground font-medium">Версия:</span> {dbStatus.version}
+          </div>
+        )}
+        {dbStatus.size_mb !== undefined && dbStatus.size_mb !== null && (
+          <div className="text-xs text-muted-foreground mb-2">
+            <span className="text-foreground font-medium">Занято:</span> {dbStatus.size_mb.toFixed(2)} МБ
           </div>
         )}
         {dbStatus.schema_exists && (

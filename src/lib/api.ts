@@ -326,6 +326,7 @@ export interface S3Settings {
   secret_key_masked?: string;
   configured?: boolean;
   use_yandex?: boolean;
+  size_mb?: number | null;
 }
 
 export interface RecognizeResult {
@@ -361,6 +362,7 @@ export interface DbSettingsStatus {
   migration_files?: string[];
   migrations_total?: number;
   connection_error?: string;
+  size_mb?: number | null;
 }
 
 export const fmt = (n: number) =>

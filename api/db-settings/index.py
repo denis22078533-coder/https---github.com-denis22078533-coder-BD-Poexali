@@ -99,6 +99,18 @@ def get_full_status() -> dict:
         status["version"] = cur.fetchone()[0]
         status["connected"] = True
 
+        # Размер базы данных (сумма по всем пользовательским таблицам)
+        try:
+            cur.execute("""
+                SELECT COALESCE(SUM(pg_total_relation_size(relid))::bigint / 1048576.0, 0) AS size_mb
+                FROM pg_stat_user_tables
+            """)
+            row = cur.fetchone()
+            status["size_mb"] = round(row[0], 2) if row and row[0] else 0.0
+        except Exception as e:
+            status["size_mb"] = None
+            status["size_error"] = str(e)
+
         # Если удалось подключиться — значит сервер БД работает
         if not status["installed"]:
             status["installed"] = True
