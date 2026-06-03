@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function refreshBalanceAfterLogin(token: string) {
     try {
-      const res = await request<{ email: string; balance: number }>("/auth/me", {
+      const res = await request<{ email: string; balance: number }>("/api/auth/me", {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       });
       setState((prev) => ({ ...prev, balance: res.balance }));
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!password) return { success: false, error: "Введите пароль" };
     
     try {
-      const res = await request<{ access_token: string; token_type: string }>("/auth/login", {
+      const res = await request<{ access_token: string; token_type: string }>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (sessionId) body.session_id = sessionId;
 
     try {
-      const res = await request<{ access_token: string }>("/auth/register", {
+      const res = await request<{ access_token: string }>("/api/auth/register", {
         method: "POST",
         body: JSON.stringify(body),
       });
@@ -145,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshBalance = useCallback(async () => {
     if (!state.token) return;
     try {
-      const res = await request<{ email: string; balance: number }>("/auth/me", {
+      const res = await request<{ email: string; balance: number }>("/api/auth/me", {
         headers: { Authorization: `Bearer ${state.token}`, "Content-Type": "application/json" },
       });
       setState((prev) => ({ ...prev, balance: res.balance }));

@@ -17,6 +17,12 @@ from fastapi import FastAPI, Request, Response, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# ─── Добавляем путь к корню проекта, чтобы импортировать app/ ──────────────
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+sys.path.insert(0, PROJECT_ROOT)
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Настройки окружения (DATABASE_URL задаётся в api/index.py)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -28,6 +34,14 @@ app = FastAPI(
     description="Единый API-сервер для управления документами, транзакциями, отчётами и ИИ",
     version="1.0.0",
 )
+
+# ─── Подключаем роутер аутентификации ───────────────────────────────────────
+try:
+    from app.app.routers.auth import router as auth_router
+    app.include_router(auth_router, prefix="/api")
+    print("[main] Auth router connected")
+except Exception as e:
+    print(f"[main] Failed to load auth router: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -78,8 +92,6 @@ def load_module(module_name: str, file_path: str):
     spec.loader.exec_module(mod)
     return mod
 
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 modules = {}
 
