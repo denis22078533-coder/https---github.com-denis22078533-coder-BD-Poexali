@@ -1,6 +1,7 @@
 import uuid
 import os
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
+import json
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, Response
 from sqlalchemy.orm import Session
 from ..auth import get_db, get_current_user
 from ..models import Document, User
@@ -60,4 +61,18 @@ async def upload_document(
     db.commit()
     db.refresh(doc)
 
-    return DocumentResponse(id=doc.id, filename=doc.filename, created_at=str(doc.created_at))
+    # Сохраняем session_id в cookie, чтобы лимит работал
+    response = Response(
+        json.dumps(DocumentResponse(id=doc.id, filename=doc.filename, created_at=str(doc.created_at)).dict()),
+        media_type="application/json",
+    )
+    if session_id:
+        response.set_cookie(
+            key="session_id",
+            value=session_id,
+            max_age=86400 * 30,  # 30 дней
+            httponly=True,
+            samesite="lax",
+            path="/",
+        )
+    return response
