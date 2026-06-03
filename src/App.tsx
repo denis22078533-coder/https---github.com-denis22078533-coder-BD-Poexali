@@ -8,7 +8,7 @@ import Documents from "@/pages/Documents";
 import AiChat from "@/pages/AiChat";
 import TaxReports from "@/pages/TaxReports";
 import AdminSettings from "@/pages/AdminSettings";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import AuthButton from "@/components/AuthButton";
 
 type Section = "dashboard" | "transactions" | "documents" | "chat" | "taxes" | "admin";
@@ -105,17 +105,7 @@ const App = () => {
             </nav>
           </div>
 
-          <div className="p-4 border-t border-sidebar-border">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#0284C7]/15 border border-[#0284C7]/30 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-bold text-[#0284C7]">ДБ</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-xs font-semibold truncate">Администратор</div>
-                <div className="text-[11px] text-muted-foreground truncate">Butsky Group</div>
-              </div>
-            </div>
-          </div>
+          <SidebarUser />
         </aside>
 
         {/* Main content */}

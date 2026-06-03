@@ -21,12 +21,25 @@ export function proxyImg(url: string | null | undefined): string | undefined {
   return url;
 }
 
+function getToken(): string | null {
+  return localStorage.getItem("auth_token");
+}
+
 async function request<T>(url: string, options?: RequestInit, timeoutMs = 120000): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   try {
     const res = await fetch(url, {
-      headers: { "Content-Type": "application/json" },
+      headers,
       signal: controller.signal,
       ...options,
     });
@@ -96,10 +109,24 @@ export const api = {
       request<{ ok: boolean }>(`${URLS.transactions}?id=${id}`, { method: "DELETE" }),
   },
 
-  // ─── Documents ──────────────────────────────────────────
+    // ─── Documents ──────────────────────────────────────────
   documents: {
-    list: () =>
-      request<{ documents: DocRecord[] }>(URLS.documents),
+    list: () => {
+      // Для гостей передаём session_id из куки
+      const getCookie = (name: string) => {
+        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        return match ? decodeURIComponent(match[2]) : '';
+      };
+      const sid = getCookie('session_id');
+      const qs = sid ? `?session_id=${encodeURIComponent(sid)}` : '';
+      return request<{ documents: DocRecord[] }>(`${URLS.documents}${qs}`);
+    },
+
+    create: (data: Partial<DocRecord>) =>
+      request<{ document: DocRecord }>(URLS.documents, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
 
     create: (data: Partial<DocRecord>) =>
       request<{ document: DocRecord }>(URLS.documents, {
@@ -257,11 +284,16 @@ export const api = {
     remove: (name: string) => request<{ ok: boolean }>(`/api/categories?name=${encodeURIComponent(name)}`, { method: "DELETE" }),
   },
 
-  // ─── Upload document to S3 ──────────────────────────────
+    // ─── Upload document to S3 ──────────────────────────────
   uploadDoc: async (params: { file_b64: string; file_name: string; mime_type: string; doc_id?: number }): Promise<{ ok: boolean; url: string; key: string; duplicate?: boolean; existing_name?: string; existing_date?: string; existing_id?: number }> => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const token = getToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
     const res = await fetch(URLS.uploadDoc, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(params),
     });
     const data = await res.json();
