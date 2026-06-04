@@ -237,9 +237,16 @@ export const api = {
     return request<{ ok: boolean; url?: string; filename?: string; count?: number; error?: string }>(`${URLS.docsPdf}${qs}`);
   },
 
-  // ─── Fix S3 ACL (public-read for all docs) ──────────────
+    // ─── Fix S3 ACL (public-read for all docs) ──────────────
   fixS3Acl: (): Promise<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }> =>
     request<{ ok: boolean; fixed: number; errors_count: number; errors: { id: number; key: string; error: string }[] }>("/api/fix-s3-acl", { method: "POST" }),
+
+  // ─── Auth Test ────────────────────────────
+  registerTest: (email: string, password: string) =>
+    request<{ access_token?: string; error?: string; detail?: string }>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
 
     // ─── Database Settings ─────────────────────────
     dbSettings: {

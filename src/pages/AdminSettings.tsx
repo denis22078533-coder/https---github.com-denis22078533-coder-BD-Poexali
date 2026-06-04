@@ -151,14 +151,28 @@ export default function AdminSettings() {
     const [dbRegistering, setDbRegistering] = useState(false);
     const [dbRegisterResult, setDbRegisterResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
-    useEffect(() => {
-    Promise.all([
-      api.aiSettings.get(),
-            api.dbSettings.get(),
-    ]).then(([aiRes, dbRes]) => {
-      setSettings(aiRes.settings);
-      setDbStatus(dbRes);
-    }).finally(() => setLoading(false));
+        useEffect(() => {
+        const loadSettings = async () => {
+          try {
+            const [aiRes, dbRes] = await Promise.all([
+              api.aiSettings.get().catch(e => {
+                console.error('Ошибка загрузки aiSettings:', e);
+                return null;
+              }),
+              api.dbSettings.get().catch(e => {
+                console.error('Ошибка загрузки dbSettings:', e);
+                return null;
+              }),
+            ]);
+            if (aiRes) setSettings(aiRes.settings);
+            if (dbRes) setDbStatus(dbRes);
+          } catch (e) {
+            console.error('Ошибка загрузки настроек:', e);
+          } finally {
+            setLoading(false);
+          }
+        };
+        loadSettings();
   }, []);
 
   
@@ -658,14 +672,14 @@ export default function AdminSettings() {
             dbRegisterResult={dbRegisterResult}
             setDbRegisterResult={setDbRegisterResult}
                         onRefresh={async () => {
-              try {
-                const res = await api.dbSettings.get();
-                setDbStatus(res);
-              } catch (e) {
-                console.error('Ошибка получения статуса БД:', e);
-                // Можно показать уведомление, но пока просто не обновляем
-              }
-            }}
+                                      try {
+                                        const res = await api.dbSettings.get();
+                                        setDbStatus(res);
+                                      } catch (e) {
+                                        console.error('Ошибка получения статуса БД:', e);
+                                        setDbStatus(null);
+                                      }
+                                    }}
           />
         </TabsContent>
       </Tabs>
@@ -743,46 +757,32 @@ function DatabaseSettings({
     }
   };
 
-  const handleCheckRegistration = async () => {
+    const handleCheckRegistration = async () => {
     setDbRegistering(true);
     setDbRegisterResult(null);
     try {
       const testEmail = `test_${Date.now()}@example.com`;
       const testPass = "Test1234";
 
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: testEmail, password: testPass }),
-      });
+      const data = await api.registerTest(testEmail, testPass);
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.access_token) {
-          setDbRegisterResult({ success: true, error: undefined });
-        } else {
-          setDbRegisterResult({ success: true, error: undefined });
-        }
+      if (data.access_token) {
+        setDbRegisterResult({ success: true, error: undefined });
       } else {
-        if (res.status === 400) {
-          const errData = await res.json();
-          if (errData.detail?.includes("already")) {
-            setDbRegisterResult({ success: true, error: undefined });
-          } else {
-            setDbRegisterResult({ success: false, error: errData.detail || "Ошибка регистрации" });
-          }
-        } else if (res.status === 422) {
-          setDbRegisterResult({ success: false, error: "Сервер ожидает другие поля. Возможно, бэкенд не запущен" });
-        } else {
-          const errText = await res.text();
-          setDbRegisterResult({ success: false, error: `HTTP ${res.status}: ${errText}` });
-        }
+        setDbRegisterResult({ success: true, error: undefined });
       }
     } catch (e) {
-      setDbRegisterResult({
-        success: false,
-        error: e instanceof Error ? e.message : "Сервер не отвечает. Убедитесь, что бэкенд запущен",
-      });
+      const err = e as Error;
+      if (err.message?.includes("already")) {
+        setDbRegisterResult({ success: true, error: undefined });
+      } else if (err.message?.includes("HTTP 422")) {
+        setDbRegisterResult({ success: false, error: "Сервер ожидает другие поля. Возможно, бэкенд не запущен" });
+      } else {
+        setDbRegisterResult({
+          success: false,
+          error: err.message || "Сервер не отвечает. Убедитесь, что бэкенд запущен",
+        });
+      }
     } finally {
       setDbRegistering(false);
     }
