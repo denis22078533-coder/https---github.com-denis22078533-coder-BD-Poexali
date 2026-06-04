@@ -93,10 +93,12 @@ def load_module(module_name: str, file_path: str):
     return mod
 
 
-modules = {}
+# ─── Lazy-загрузка модулей: при старте не загружаем, только при первом запросе ─
+_module_cache: dict[str, object] = {}
+_module_paths: dict[str, str] = {}
 
-# Загружаем все модули
-module_paths = {
+# Определяем пути ко всем модулям (без загрузки)
+module_paths: dict[str, str] = {
     "upload_doc": os.path.join(BASE_DIR, "upload-doc", "index.py"),
     "recognize_doc": os.path.join(BASE_DIR, "recognize-doc", "index.py"),
     "ai_settings": os.path.join(BASE_DIR, "ai-settings", "index.py"),
@@ -112,13 +114,21 @@ module_paths = {
     "db_settings": os.path.join(BASE_DIR, "db-settings", "index.py"),
 }
 
-for name, path in module_paths.items():
-    try:
-        modules[name] = load_module(name, path)
-        print(f"[main] Loaded module: {name}")
-    except Exception as e:
-        print(f"[main] Failed to load {name}: {e}")
-
+def get_module(module_key: str):
+    """Ленивая загрузка модуля: грузим только при первом обращении."""
+    if module_key not in _module_cache:
+        file_path = module_paths.get(module_key)
+        if not file_path or not os.path.exists(file_path):
+            raise ImportError(f"Module {module_key} not found at {file_path}")
+        try:
+            _module_cache[module_key] = load_module(module_key, file_path)
+            print(f"[main] Loaded module: {module_key}")
+        except Exception as e:
+            import traceback
+            print(f"[main] Failed to load {module_key}: {e}")
+            print(traceback.format_exc())
+            raise
+    return _module_cache[module_key]
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Middleware: сохраняем body в state
@@ -135,10 +145,14 @@ async def capture_body(request: Request, call_next):
 # Универсальная прослойка: вызывает handler(event, context) модуля
 # ──────────────────────────────────────────────────────────────────────────────
 async def call_module_handler(request: Request, module_key: str):
-    mod = modules.get(module_key)
-    if not mod:
+    try:
+        mod = get_module(module_key)
+    except Exception as e:
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"[main] Error loading module {module_key}: {error_detail}")
         return Response(
-            content=json.dumps({"error": f"Module {module_key} not found"}),
+            content=json.dumps({"error": f"Module {module_key} not found: {str(e)}"}),
             status_code=500,
             media_type="application/json",
         )
@@ -248,7 +262,7 @@ async def db_settings_endpoint(request: Request):
 # ──────────────────────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
-    return {"status": "ok", "schema": SCHEMA, "modules_loaded": list(modules.keys())}
+    return {"status": "ok", "schema": SCHEMA}
 
 
 # ──────────────────────────────────────────────────────────────────────────────

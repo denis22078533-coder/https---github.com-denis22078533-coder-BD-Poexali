@@ -129,36 +129,36 @@ def handler(event: dict, context) -> dict:
             return resp(200, {"documents": rows})
 
         if method == "POST":
-                        body = json.loads(event.get("body") or "{}")
-            # Определяем user_id (для авторизованных) и session_id (для гостей)
-            user_id = get_user_id_from_token(headers, conn, cur)
-            session_id = body.get("session_id")
-            if not user_id and not session_id:
-                session_id = None  # допустимо для fallback
-            cur.execute(f"""
-                INSERT INTO {SCHEMA}.documents
-                    (user_id, session_id, name, size_label, file_key, status, rec_type, rec_amount, rec_date, rec_counterparty, rec_inn, s3_url, is_cashless)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id, name, size_label, status, s3_url, created_at, is_cashless
-            """, (
-                user_id,
-                session_id if not user_id else None,  # если есть user_id — session_id не пишем
-                body.get("name", "document"),
-                body.get("size_label"),
-                body.get("file_key"),
-                body.get("status", "processing"),
-                body.get("rec_type"),
-                body.get("rec_amount"),
-                body.get("rec_date"),
-                body.get("rec_counterparty"),
-                body.get("rec_inn"),
-                body.get("s3_url"),
-                body.get("is_cashless", False),
-            ))
-            conn.commit()
-            cols = ["id","name","size_label","status","s3_url","created_at","is_cashless"]
-            row = dict(zip(cols, cur.fetchone()))
-            return resp(201, {"document": row})
+                    body = json.loads(event.get("body") or "{}")
+                    # Определяем user_id (для авторизованных) и session_id (для гостей)
+                    user_id = get_user_id_from_token(headers, conn, cur)
+                    session_id = body.get("session_id")
+                    if not user_id and not session_id:
+                        session_id = None  # допустимо для fallback
+                    cur.execute(f"""
+                        INSERT INTO {SCHEMA}.documents
+                            (user_id, session_id, name, size_label, file_key, status, rec_type, rec_amount, rec_date, rec_counterparty, rec_inn, s3_url, is_cashless)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id, name, size_label, status, s3_url, created_at, is_cashless
+                    """, (
+                        user_id,
+                        session_id if not user_id else None,  # если есть user_id — session_id не пишем
+                        body.get("name", "document"),
+                        body.get("size_label"),
+                        body.get("file_key"),
+                        body.get("status", "processing"),
+                        body.get("rec_type"),
+                        body.get("rec_amount"),
+                        body.get("rec_date"),
+                        body.get("rec_counterparty"),
+                        body.get("rec_inn"),
+                        body.get("s3_url"),
+                        body.get("is_cashless", False),
+                    ))
+                    conn.commit()
+                    cols = ["id","name","size_label","status","s3_url","created_at","is_cashless"]
+                    row = dict(zip(cols, cur.fetchone()))
+                    return resp(201, {"document": row})
 
         if method == "PUT":
             doc_id = qs.get("id")

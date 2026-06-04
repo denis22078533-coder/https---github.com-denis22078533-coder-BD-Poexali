@@ -129,7 +129,7 @@ function TileDialog({
               Проверить подключение
             </button>
           )}
-          {onTest && tile.id === 'storage' && sizeMb !== null && sizeMb !== undefined && (
+          {onTest && tile.id === 'storage' && typeof sizeMb === 'number' && (
             <span className="text-xs text-zinc-400 flex items-center gap-1">
               <Icon name="HardDrive" size={12} />
               Занято: {sizeMb.toFixed(2)} МБ
