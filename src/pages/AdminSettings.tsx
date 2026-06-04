@@ -982,7 +982,7 @@ function DatabaseSettings({
         )}
         {safeStatus.size_mb !== undefined && safeStatus.size_mb !== null && (
           <div className="text-xs text-muted-foreground mb-2">
-            <span className="text-foreground font-medium">Занято:</span> {safeStatus.size_mb ? safeStatus.size_mb.toFixed(2) : '0'} МБ
+            <span className="text-foreground font-medium">Занято:</span> {safeStatus.size_mb?.toFixed?.(2) ?? '0.00'} МБ
           </div>
         )}
         {safeStatus.schema_exists && (
