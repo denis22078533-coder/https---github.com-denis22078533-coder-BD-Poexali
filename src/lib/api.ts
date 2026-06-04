@@ -128,12 +128,6 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    create: (data: Partial<DocRecord>) =>
-      request<{ document: DocRecord }>(URLS.documents, {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-
     update: (id: number, data: Partial<DocRecord>) =>
       request<{ document: DocRecord }>(`${URLS.documents}?id=${id}`, {
         method: "PUT",
