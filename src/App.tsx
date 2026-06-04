@@ -8,11 +8,12 @@ import Documents from "@/pages/Documents";
 import AiChat from "@/pages/AiChat";
 import TaxReports from "@/pages/TaxReports";
 import AdminSettings from "@/pages/AdminSettings";
+import Setup from "@/pages/Setup";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import AuthButton from "@/components/AuthButton";
 import SidebarUser from "@/components/SidebarUser";
 
-type Section = "dashboard" | "transactions" | "documents" | "chat" | "taxes" | "admin";
+type Section = "dashboard" | "transactions" | "documents" | "chat" | "taxes" | "admin" | "setup";
 
 const nav: { id: Section; label: string; icon: string; shortLabel: string; badge?: string }[] = [
   { id: "dashboard", label: "Главная", shortLabel: "Главная", icon: "LayoutDashboard" },
@@ -21,6 +22,7 @@ const nav: { id: Section; label: string; icon: string; shortLabel: string; badge
   { id: "chat", label: "ИИ-ассистент", shortLabel: "ИИ-чат", icon: "MessageSquare", badge: "ИИ" },
   { id: "taxes", label: "Налоговая отчётность", shortLabel: "Отчёты", icon: "FileBarChart" },
   { id: "admin", label: "Настройки", shortLabel: "Настройки", icon: "Settings2" },
+  { id: "setup", label: "Установка", shortLabel: "Установка", icon: "Rocket" },
 ];
 
 const titles: Record<Section, string> = {
@@ -30,6 +32,7 @@ const titles: Record<Section, string> = {
   chat: "ИИ-ассистент",
   taxes: "Налоговая отчётность",
   admin: "Настройки",
+  setup: "Установка",
 };
 
 const App = () => {
@@ -43,6 +46,7 @@ const App = () => {
     chat: <AiChat />,
     taxes: <TaxReports />,
     admin: <AdminSettings />,
+    setup: <Setup />,
   }[section];
 
   return (
