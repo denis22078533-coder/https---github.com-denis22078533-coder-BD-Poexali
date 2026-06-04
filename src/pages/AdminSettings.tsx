@@ -148,8 +148,10 @@ export default function AdminSettings() {
   const [dbManualUrl, setDbManualUrl] = useState("");
   const [dbSavingUrl, setDbSavingUrl] = useState(false);
   const [dbUrlSaved, setDbUrlSaved] = useState(false);
+    const [dbRegistering, setDbRegistering] = useState(false);
+    const [dbRegisterResult, setDbRegisterResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
-  useEffect(() => {
+    useEffect(() => {
     Promise.all([
       api.aiSettings.get(),
             api.dbSettings.get(),
@@ -651,6 +653,10 @@ export default function AdminSettings() {
             setDbSavingUrl={setDbSavingUrl}
             dbUrlSaved={dbUrlSaved}
             setDbUrlSaved={setDbUrlSaved}
+            dbRegistering={dbRegistering}
+            setDbRegistering={setDbRegistering}
+            dbRegisterResult={dbRegisterResult}
+            setDbRegisterResult={setDbRegisterResult}
                         onRefresh={async () => {
               try {
                 const res = await api.dbSettings.get();
@@ -685,6 +691,10 @@ interface DatabaseSettingsProps {
   setDbSavingUrl: (v: boolean) => void;
   dbUrlSaved: boolean;
   setDbUrlSaved: (v: boolean) => void;
+  dbRegistering: boolean;
+  setDbRegistering: (v: boolean) => void;
+  dbRegisterResult: { success?: boolean; error?: string } | null;
+  setDbRegisterResult: (v: { success?: boolean; error?: string } | null) => void;
   onRefresh: () => void;
 }
 
@@ -697,6 +707,8 @@ function DatabaseSettings({
   dbManualUrl, setDbManualUrl,
   dbSavingUrl, setDbSavingUrl,
   dbUrlSaved, setDbUrlSaved,
+  dbRegistering, setDbRegistering,
+  dbRegisterResult, setDbRegisterResult,
   onRefresh,
 }: DatabaseSettingsProps) {
   // Статус-бейдж
@@ -728,6 +740,51 @@ function DatabaseSettings({
       setDbMigrateResult({ ok: false, error: e instanceof Error ? e.message : "Ошибка" });
     } finally {
       setDbMigrating(false);
+    }
+  };
+
+  const handleCheckRegistration = async () => {
+    setDbRegistering(true);
+    setDbRegisterResult(null);
+    try {
+      const testEmail = `test_${Date.now()}@example.com`;
+      const testPass = "Test1234";
+
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: testEmail, password: testPass }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.access_token) {
+          setDbRegisterResult({ success: true, error: undefined });
+        } else {
+          setDbRegisterResult({ success: true, error: undefined });
+        }
+      } else {
+        if (res.status === 400) {
+          const errData = await res.json();
+          if (errData.detail?.includes("already")) {
+            setDbRegisterResult({ success: true, error: undefined });
+          } else {
+            setDbRegisterResult({ success: false, error: errData.detail || "Ошибка регистрации" });
+          }
+        } else if (res.status === 422) {
+          setDbRegisterResult({ success: false, error: "Сервер ожидает другие поля. Возможно, бэкенд не запущен" });
+        } else {
+          const errText = await res.text();
+          setDbRegisterResult({ success: false, error: `HTTP ${res.status}: ${errText}` });
+        }
+      }
+    } catch (e) {
+      setDbRegisterResult({
+        success: false,
+        error: e instanceof Error ? e.message : "Сервер не отвечает. Убедитесь, что бэкенд запущен",
+      });
+    } finally {
+      setDbRegistering(false);
     }
   };
 
@@ -1105,7 +1162,42 @@ function DatabaseSettings({
             ) : (
               <><Icon name="Play" size={15} /> Запустить миграции</>
             )}
+                    </button>
+
+          <button onClick={handleCheckRegistration} disabled={dbRegistering}
+            className="px-5 py-2.5 bg-gold text-primary-foreground rounded text-sm font-medium hover:bg-yellow-500 transition-colors flex items-center gap-2 disabled:opacity-50 ml-2">
+            {dbRegistering ? (
+              <>
+                <div className="w-4 h-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
+                Проверка...
+              </>
+            ) : (
+              <><Icon name="UserPlus" size={15} /> Проверить регистрацию</>
+            )}
           </button>
+
+          {dbRegisterResult && (
+            <div className={`mt-3 p-3 rounded-lg border text-sm ${
+              dbRegisterResult.success
+                ? "bg-green-900/20 border-green-900/30 text-green-400"
+                : "bg-red-900/20 border-red-900/30 text-red-400"
+            }`}>
+              {dbRegisterResult.success ? (
+                <div className="flex items-center gap-2 font-medium">
+                  <Icon name="CheckCircle" size={16} />
+                  Регистрация работает!
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2 font-medium">
+                    <Icon name="AlertCircle" size={16} />
+                    Ошибка регистрации
+                  </div>
+                  <div className="text-xs mt-1">{dbRegisterResult.error}</div>
+                </div>
+              )}
+            </div>
+          )}
 
           {dbMigrateResult && (
             <div className={`mt-3 p-3 rounded-lg border text-sm ${
