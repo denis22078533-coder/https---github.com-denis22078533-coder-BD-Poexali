@@ -1,0 +1,1 @@
+# Package initializer for documents module

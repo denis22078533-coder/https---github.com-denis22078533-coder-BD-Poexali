@@ -160,6 +160,7 @@ export default function Documents() {
           rec_date: result.date, rec_counterparty: result.counterparty || undefined, rec_inn: result.inn || undefined,
         });
       } else {
+        alert(`Ошибка распознавания: ${result.error}`);
         await api.documents.update(docId, { status: "error" }).catch(() => {});
       }
       const updated = await api.documents.list();
@@ -170,6 +171,7 @@ export default function Documents() {
       setSelected((prev) => prev?.id === docId ? { ...prev, ...finalDoc } : prev);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Ошибка распознавания";
+      alert(`Исключение при распознавании: ${msg}`);
       await api.documents.update(docId, { status: "error" }).catch(() => {});
       setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, status: "error", recognizing: false, recognitionError: msg } : d));
       setSelected((prev) => prev?.id === docId ? { ...prev, status: "error", recognizing: false, recognitionError: msg } : prev);
