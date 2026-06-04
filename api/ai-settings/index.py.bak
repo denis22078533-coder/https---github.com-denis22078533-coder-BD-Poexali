@@ -73,9 +73,9 @@ def ensure_schema_and_table():
         cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS yandex_folder_id TEXT NOT NULL DEFAULT ''")
         cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS proxyapi_key TEXT NOT NULL DEFAULT ''")
         cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS vision_provider VARCHAR(64) NOT NULL DEFAULT 'proxyapi-gpt-4o'")
-        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS guest_free_limit INT NOT NULL DEFAULT 5")
-        cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS registration_bonus INT NOT NULL DEFAULT 5")
-        # Вставляем дефолтную строку, если таблица пуста
+                cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS guest_free_limit INT NOT NULL DEFAULT 5")
+                cur.execute(f"ALTER TABLE {SCHEMA}.ai_settings ADD COLUMN IF NOT EXISTS registration_bonus INT NOT NULL DEFAULT 5")
+                # Вставляем дефолтную строку, если таблица пуста
         cur.execute(f"""
             INSERT INTO {SCHEMA}.ai_settings (id)
             SELECT 1
@@ -211,7 +211,7 @@ def handler(event: dict, context) -> dict:
     conn = get_conn()
     cur = conn.cursor()
 
-    # Убеждаемся, что таблица существует
+        # Убеждаемся, что таблица существует
     ensure_schema_and_table()
 
     try:
@@ -222,7 +222,7 @@ def handler(event: dict, context) -> dict:
                 FROM {SCHEMA}.ai_settings WHERE id = 1
             """)
             row = cur.fetchone()
-            if not row:
+                        if not row:
                 return resp(404, {"ok": False, "error": "Настройки не найдены"})
             model = row[0]
             deepseek_key = row[1] or os.environ.get("DEEPSEEK_API_KEY", "")
@@ -266,9 +266,9 @@ def handler(event: dict, context) -> dict:
         if method == "GET":
             cur.execute(f"""
                 SELECT selected_model, max_tokens, temperature, system_prompt, api_key, updated_at, gemini_api_key,
-                       yandex_api_key, yandex_folder_id, proxyapi_key, vision_provider,
-                       guest_free_limit, registration_bonus
-                FROM {SCHEMA}.ai_settings WHERE id = 1
+                                       yandex_api_key, yandex_folder_id, proxyapi_key, vision_provider,
+                                       guest_free_limit, registration_bonus
+                                FROM {SCHEMA}.ai_settings WHERE id = 1
             """)
             row = cur.fetchone()
             if not row:
@@ -278,13 +278,12 @@ def handler(event: dict, context) -> dict:
             yandex_folder = row[8] or os.environ.get("YANDEX_FOLDER_ID", "")
             proxyapi_key = row[9] or os.environ.get("PROXYAPI_KEY", "")
             vision_provider = row[10] or "proxyapi-gpt-4o"
-            guest_free_limit = row[11] if len(row) > 11 else 5
-            registration_bonus = row[12] if len(row) > 12 else 5
-
-            result = {
-                "guest_free_limit": guest_free_limit,
-                "registration_bonus": registration_bonus,
-                "selected_model": row[0],
+                        guest_free_limit = row[11] if len(row) > 11 else 5
+                        registration_bonus = row[12] if len(row) > 12 else 5
+                        result = {
+                            "guest_free_limit": guest_free_limit,
+                            "registration_bonus": registration_bonus,
+                            "selected_model": row[0],
                 "max_tokens": row[1],
                 "temperature": float(row[2]),
                 "system_prompt": row[3],
@@ -312,26 +311,19 @@ def handler(event: dict, context) -> dict:
                     fields.append(f"{f} = %s")
                     params.append(body[f])
             if body.get("api_key"):
-                fields.append("api_key = %s")
-                params.append(body["api_key"])
+                fields.append("api_key = %s"); params.append(body["api_key"])
             if body.get("gemini_api_key"):
-                fields.append("gemini_api_key = %s")
-                params.append(body["gemini_api_key"])
+                fields.append("gemini_api_key = %s"); params.append(body["gemini_api_key"])
             if body.get("yandex_api_key"):
-                fields.append("yandex_api_key = %s")
-                params.append(body["yandex_api_key"])
+                fields.append("yandex_api_key = %s"); params.append(body["yandex_api_key"])
             if body.get("yandex_folder_id"):
-                fields.append("yandex_folder_id = %s")
-                params.append(body["yandex_folder_id"])
+                fields.append("yandex_folder_id = %s"); params.append(body["yandex_folder_id"])
             if body.get("proxyapi_key"):
-                fields.append("proxyapi_key = %s")
-                params.append(body["proxyapi_key"])
-            if body.get("guest_free_limit") is not None:
-                fields.append("guest_free_limit = %s")
-                params.append(int(body["guest_free_limit"]))
-            if body.get("registration_bonus") is not None:
-                fields.append("registration_bonus = %s")
-                params.append(int(body["registration_bonus"]))
+                            fields.append("proxyapi_key = %s"); params.append(body["proxyapi_key"])
+                        if body.get("guest_free_limit") is not None:
+                            fields.append("guest_free_limit = %s"); params.append(int(body["guest_free_limit"]))
+                        if body.get("registration_bonus") is not None:
+                            fields.append("registration_bonus = %s"); params.append(int(body["registration_bonus"]))
             if not fields:
                 return resp(400, {"error": "No fields"})
             fields.append("updated_at = NOW()")
@@ -339,9 +331,9 @@ def handler(event: dict, context) -> dict:
             cur.execute(f"""
                 UPDATE {SCHEMA}.ai_settings SET {', '.join(fields)} WHERE id = %s
                 RETURNING selected_model, max_tokens, temperature, system_prompt, api_key, gemini_api_key,
-                          yandex_api_key, yandex_folder_id, proxyapi_key, vision_provider,
-                          guest_free_limit, registration_bonus
-            """, params)
+                                          yandex_api_key, yandex_folder_id, proxyapi_key, vision_provider,
+                                          guest_free_limit, registration_bonus
+                            """, params)
             conn.commit()
             row = cur.fetchone()
             gemini_key = row[5] or ""
@@ -349,13 +341,12 @@ def handler(event: dict, context) -> dict:
             yandex_folder = row[7] or os.environ.get("YANDEX_FOLDER_ID", "")
             proxyapi_key = row[8] or ""
             vision_provider = row[9] or "proxyapi-gpt-4o"
-            guest_free_limit = row[10] if len(row) > 10 else 5
-            registration_bonus = row[11] if len(row) > 11 else 5
-
-            result = {
-                "guest_free_limit": guest_free_limit,
-                "registration_bonus": registration_bonus,
-                "selected_model": row[0],
+                        guest_free_limit = row[10] if len(row) > 10 else 5
+                        registration_bonus = row[11] if len(row) > 11 else 5
+                        result = {
+                            "guest_free_limit": guest_free_limit,
+                            "registration_bonus": registration_bonus,
+                            "selected_model": row[0],
                 "max_tokens": row[1],
                 "temperature": float(row[2]),
                 "system_prompt": row[3],

@@ -166,7 +166,7 @@ export default function Documents() {
       const updated = await api.documents.list();
       const updatedDoc = updated.documents.find((d) => d.id === docId);
       if (previewUrl) savePreview(docId, previewUrl);
-      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl, status: result.error ? "error" : (updatedDoc?.status || "processing") };
+      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl, status: (result.error ? "error" : (updatedDoc?.status || "processing")) as "error" | "processing" | "done" };
       setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, ...finalDoc } : d));
       setSelected((prev) => prev?.id === docId ? { ...prev, ...finalDoc } : prev);
     } catch (err) {
@@ -255,7 +255,7 @@ export default function Documents() {
       const updated = await api.documents.list();
       const updatedDoc = updated.documents.find((d) => d.id === docId);
       if (previewUrl) savePreview(docId, previewUrl);
-      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl, status: result.error ? "error" : (updatedDoc?.status || "processing") };
+      const finalDoc = { ...(updatedDoc || {}), recognizing: false, recognition: result, previewUrl, status: (result.error ? "error" : (updatedDoc?.status || "processing")) as "error" | "processing" | "done" };
       setDocs((prev) => prev.map((d) => d.id === docId ? { ...d, ...finalDoc } : d));
       setSelected((prev) => prev?.id === docId ? { ...prev, ...finalDoc } : prev);
     } catch (err) {
